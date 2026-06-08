@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Comparativo de Seguros — GEHCH</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --azul:#0d1f3c;--azul2:#1a3a6b;--azul3:#243f6b;
+  --dorado:#b8972a;--dorado2:#d4b04a;--dorado3:#f0d080;
+  --gris:#f5f7fb;--borde:#dde3ee;--texto:#1a202c;
+  --suave:#64748b;--verde:#15803d;--rojo:#b91c1c;
+  --blanco:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#eef1f7;color:var(--texto);font-size:13px;}
+.page{max-width:1280px;margin:0 auto;padding:32px 24px 60px;}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,var(--azul) 0%,var(--azul2) 100%);border-radius:20px;padding:36px 44px;margin-bottom:24px;box-shadow:0 8px 32px rgba(13,31,60,0.25);}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;margin-bottom:28px;}
+.brand{display:flex;flex-direction:column;gap:6px;}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;color:#fff;letter-spacing:5px;line-height:1;}
+.brand-tagline{font-size:10px;color:var(--dorado2);letter-spacing:3px;text-transform:uppercase;font-weight:600;}
+.doc-meta{text-align:right;}
+.doc-tipo{font-family:'Cormorant Garamond',serif;font-size:22px;color:#fff;font-weight:600;line-height:1.2;}
+.doc-ramo{font-size:11px;color:rgba(255,255,255,0.5);margin-top:5px;letter-spacing:1px;text-transform:uppercase;}
+.cliente-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.ci{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;}
+.ci label{display:block;font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;}
+.ci input,.ci select{width:100%;background:transparent;border:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;}
+.ci input::placeholder{color:rgba(255,255,255,0.2);font-style:italic;}
+
+/* ── AVISO ── */
+.aviso{background:#fff8e1;border-left:4px solid var(--dorado);border-radius:8px;padding:12px 18px;margin-bottom:24px;font-size:12px;color:#7a5c00;display:flex;align-items:flex-start;gap:10px;}
+
+/* ── SECTION ── */
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--azul);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--dorado),transparent);}
+
+/* ── BOTONES ── */
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--azul2);}
+.btn-gold{background:var(--dorado);color:#fff;}
+.btn-gold:hover{background:var(--dorado2);}
+.btn-ghost{background:transparent;color:var(--azul2);border:1.5px dashed var(--azul2);padding:7px 14px;font-size:11px;}
+.btn-ghost:hover{background:var(--azul);color:#fff;border-color:var(--azul);}
+.btn-del{background:none;border:none;cursor:pointer;color:#fca5a5;font-size:13px;padding:3px 6px;border-radius:4px;line-height:1;}
+.btn-del:hover{color:#dc2626;background:#fef2f2;}
+
+/* ── CARD ── */
+.card{background:#fff;border-radius:14px;border:1px solid var(--borde);overflow:hidden;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+.card-header{background:var(--azul);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;}
+.card-header-title{font-size:11px;font-weight:600;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:1px;}
+
+/* ── TABLA VEHÍCULOS ── */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:var(--azul);color:rgba(255,255,255,0.7);padding:10px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;text-align:left;white-space:nowrap;}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--borde);vertical-align:middle;}
+.tbl tbody tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover{background:#f8faff;}
+.inp{width:100%;background:transparent;border:none;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--texto);outline:none;}
+.inp::placeholder{color:#c0cad8;font-style:italic;}
+.sel{background:transparent;border:none;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--texto);outline:none;cursor:pointer;}
+.badge{padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;}
+.badge-full{background:#dbeafe;color:#1d4ed8;}
+.badge-basico{background:#f1f5f9;color:#475569;}
+.badge-rc{background:#fef9c3;color:#854d0e;}
+.tbl-foot{background:var(--azul);color:#fff;}
+.tbl-foot td{padding:11px 14px;font-weight:700;border-bottom:none;}
+
+/* ── TABLA PRIMAS ── */
+.primas-wrap{overflow-x:auto;}
+#tbl-primas{width:100%;border-collapse:collapse;min-width:500px;}
+#tbl-primas th{padding:11px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;text-align:center;border-bottom:3px solid;}
+#tbl-primas th.th-veh{text-align:left;background:var(--azul);color:rgba(255,255,255,0.7);border-bottom-color:rgba(255,255,255,0.15);}
+#tbl-primas td{padding:8px 14px;border-bottom:1px solid var(--borde);vertical-align:middle;}
+#tbl-primas td.td-veh{font-weight:500;font-size:12px;}
+#tbl-primas tbody tr:hover{background:#f8faff;}
+.prima-inp{width:100%;border:none;border-bottom:1.5px dashed #dde3ee;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;text-align:center;outline:none;padding:4px 2px;color:var(--texto);}
+.prima-inp:focus{border-bottom-color:var(--dorado);}
+.prima-inp::placeholder{color:#c0cad8;}
+.tot-row td{padding:10px 14px;font-weight:700;text-align:center;}
+.tot-neta{background:var(--azul);}
+.tot-isc{background:var(--azul3);}
+.tot-final{background:var(--azul);border-top:2px solid var(--dorado);}
+
+/* ── COMPARATIVO ── */
+.comp-wrap{overflow-x:auto;}
+#tbl-comp{width:100%;border-collapse:collapse;min-width:600px;}
+#tbl-comp th{padding:12px 14px;font-size:11px;font-weight:700;text-align:center;border-bottom:3px solid;white-space:nowrap;}
+#tbl-comp th.th-cob{text-align:left;background:var(--azul);color:rgba(255,255,255,0.6);font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom-color:rgba(255,255,255,0.1);min-width:200px;}
+#tbl-comp td{padding:9px 14px;border-bottom:1px solid var(--borde);vertical-align:middle;}
+#tbl-comp td.td-cob-label{background:var(--azul);color:rgba(255,255,255,0.75);font-size:11px;}
+#tbl-comp td.td-cob-label.sec{background:#1a3260;color:var(--dorado3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:1px;}
+#tbl-comp td.td-val{text-align:center;background:#fff;}
+#tbl-comp tr.spacer td{height:3px;background:var(--gris);padding:0;border:none;}
+.cob-inp{width:100%;background:transparent;border:none;font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,0.75);outline:none;}
+.val-area{width:100%;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:11px;text-align:center;outline:none;resize:none;min-height:34px;line-height:1.5;color:var(--texto);}
+.val-area::placeholder{color:#c0cad8;font-style:italic;font-size:10px;}
+.aseg-name-inp{width:100%;border:none;background:transparent;font-weight:700;font-size:12px;text-align:center;outline:none;font-family:'DM Sans',sans-serif;}
+.btn-del-col{display:block;margin:0 auto 5px;background:none;border:none;cursor:pointer;color:#fca5a5;font-size:11px;line-height:1;padding:1px 4px;}
+.btn-del-col:hover{color:#dc2626;}
+
+/* ── RECOMENDACIÓN ── */
+.recom-card{background:var(--azul);border-radius:14px;padding:26px 32px;margin-bottom:24px;}
+.recom-label{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--dorado2);margin-bottom:12px;}
+.recom-txt{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;min-height:80px;outline:none;resize:vertical;}
+.recom-txt::placeholder{color:rgba(255,255,255,0.25);font-style:italic;}
+
+/* ── FOOTER ── */
+.footer{background:var(--azul);border-radius:12px;padding:16px 28px;display:flex;justify-content:space-between;align-items:center;}
+.footer-txt{font-size:11px;color:rgba(255,255,255,0.4);}
+.footer-brand{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--dorado);letter-spacing:3px;}
+
+/* ── BTN IMPRIMIR ── */
+.fab{position:fixed;bottom:24px;right:24px;background:var(--dorado);color:#fff;border:none;border-radius:99px;padding:13px 24px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 24px rgba(184,151,42,0.5);z-index:999;transition:all 0.2s;}
+.fab:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(184,151,42,0.6);}
+
+@media print{
+  .fab,.aviso,.btn,.btn-del,.btn-del-col{display:none!important;}
+  body{background:#fff;}
+  .page{padding:12px;}
+  .header{box-shadow:none;}
+  .card{box-shadow:none;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-name">GEHCH</div>
+      <div class="brand-tagline">Corredores de Seguros</div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-tipo">Análisis Comparativo<br>de Coberturas</div>
+      <div class="doc-ramo">Seguro de Automóvil</div>
+    </div>
+  </div>
+  <div class="cliente-grid">
+    <div class="ci"><label>Cliente</label><input placeholder="Nombre del cliente"/></div>
+    <div class="ci"><label>RNC / Cédula</label><input placeholder="000-000000-0"/></div>
+    <div class="ci"><label>Vigencia desde</label><input type="date"/></div>
+    <div class="ci"><label>Vigencia hasta</label><input type="date"/></div>
+    <div class="ci"><label>Corredor</label><input value="Guillermo E. Herrera Chacón"/></div>
+  </div>
+</div>
+
+<!-- AVISO -->
+<div class="aviso">
+  ✏️ <span><strong>Plantilla GEHCH reutilizable.</strong> Los datos de Humano Seguros son una guía editable. Agregue o elimine vehículos, aseguradoras y coberturas según el caso. Imprima o guarde como PDF para entregar al cliente.</span>
+</div>
+
+<!-- VEHÍCULOS -->
+<div class="sec-title">Vehículos Asegurados</div>
+<div class="card">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:36px;">#</th>
+          <th>Plan</th>
+          <th>Tipo</th>
+          <th>Marca / Modelo</th>
+          <th>Año</th>
+          <th>Placa / Chasis</th>
+          <th>Valor Asegurado</th>
+          <th style="width:36px;"></th>
+        </tr>
+      </thead>
+      <tbody id="veh-tbody"></tbody>
+    </table>
+  </div>
+</div>
+<button class="btn btn-primary" onclick="addVeh()">＋ Agregar vehículo</button>
+
+<!-- PRIMAS POR VEHÍCULO -->
+<div class="sec-title" style="margin-top:28px;">Primas por Vehículo</div>
+<div class="card">
+  <div class="primas-wrap">
+    <table id="tbl-primas">
+      <thead><tr id="pr-thead"></tr></thead>
+      <tbody id="pr-tbody"></tbody>
+      <tfoot id="pr-tfoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- COMPARATIVO -->
+<div class="sec-title" style="margin-top:4px;">Cuadro Comparativo de Coberturas</div>
+<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+  <button class="btn btn-gold" onclick="addAseg()">＋ Agregar aseguradora</button>
+  <button class="btn btn-ghost" onclick="addCob()">＋ Agregar cobertura</button>
+</div>
+<div class="card">
+  <div class="comp-wrap">
+    <table id="tbl-comp">
+      <thead><tr id="comp-thead"></tr></thead>
+      <tbody id="comp-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- RECOMENDACIÓN -->
+<div class="recom-card">
+  <div class="recom-label">💡 Recomendación del Corredor</div>
+  <textarea class="recom-txt" placeholder="Escriba aquí su análisis y recomendación para el cliente..."></textarea>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-txt">GEHCH Corredores de Seguros · gherrera@gehchseguros.com · (809) 284-7898 · Santo Domingo, República Dominicana</div>
+  <div class="footer-brand">GEHCH</div>
+</div>
+
+</div>
+<button class="fab" onclick="window.print()">🖨️ Imprimir / PDF</button>
+
+<script>
+// ═══════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════
+var vehs = [];
+var aseguradoras = [];
+var vehId = 0;
+var asegId = 0;
+
+var PALETA = [
+  {bg:'#e0f7fa',txt:'#005f73',brd:'#0096c7',tot:'#0096c7'},
+  {bg:'#f0fdf4',txt:'#166534',brd:'#16a34a',tot:'#16a34a'},
+  {bg:'#fefce8',txt:'#854d0e',brd:'#ca8a04',tot:'#ca8a04'},
+  {bg:'#fdf4ff',txt:'#6b21a8',brd:'#9333ea',tot:'#9333ea'},
+  {bg:'#fff1f2',txt:'#9f1239',brd:'#e11d48',tot:'#e11d48'},
+];
+
+// Coberturas default (guía Humano, editables)
+var COBERTURAS = [
+  {s:true, l:'DAÑOS PROPIOS'},
+  {l:'Pérd. Daños Materiales Parcial — Deducible',  v:'1% | Mín. RD$ 10,000'},
+  {l:'Pérd. Daños Materiales Total — Deducible',    v:'1% | Mín. RD$ 10,000'},
+  {l:'Pérd. Robo o Hurto Parcial — Deducible',      v:'10% | Mín. RD$ 500'},
+  {l:'Pérd. Robo o Hurto Total — Deducible',        v:'10% | Mín. RD$ 500'},
+  {l:'Rotación de Cristales',                        v:'Incluido'},
+  {l:'Inundación y/o Daños por Agua',                v:'Incluido'},
+  {s:true, l:'RESPONSABILIDAD CIVIL A TERCEROS'},
+  {l:'Daños Materiales — Un Tercero',               v:'RD$ 500,000'},
+  {l:'Daños Materiales — Más de un Tercero',        v:'RD$ 1,000,000'},
+  {l:'Lesiones Corporales — Un Tercero',            v:'RD$ 500,000'},
+  {l:'Lesiones Corporales — Más de un Tercero',     v:'RD$ 1,000,000'},
+  {s:true, l:'SERVICIOS Y BENEFICIOS'},
+  {l:'Asistencia Vial',                             v:'CMA — 30 días | Máx. RD$ 10,000 x serv.'},
+  {l:'Casa Cárcel',                                  v:'Incluido'},
+  {l:'Defensa Legal',                                v:'Incluida en cobertura'},
+  {l:'Accidentes Personales Conductor',              v:'RD$ 150,000'},
+  {l:'Gastos Médicos Conductor',                     v:'RD$ 150,000'},
+  {l:'Fianza Judicial',                              v:'RD$ 2,000,000'},
+];
+
+// ═══════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════
+function fmt(n){
+  if(!n && n!==0) return 'RD$ 0.00';
+  return 'RD$ ' + Number(n).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function makeInput(ph, val, cls){
+  var i = document.createElement('input');
+  i.className = cls || 'inp';
+  i.placeholder = ph || '';
+  if(val) i.value = val;
+  return i;
+}
+
+function makeTd(content, cls){
+  var td = document.createElement('td');
+  if(cls) td.className = cls;
+  if(typeof content === 'string') td.textContent = content;
+  else if(content) td.appendChild(content);
+  return td;
+}
+
+// ═══════════════════════════════════════════════════
+// VEHÍCULOS
+// ═══════════════════════════════════════════════════
+function addVeh(){
+  vehId++;
+  var id = 'v' + vehId;
+  vehs.push({id:id});
+  renderVehs();
+  rebuildPrimas();
+}
+
+function delVeh(id){
+  vehs = vehs.filter(function(v){return v.id !== id;});
+  renderVehs();
+  rebuildPrimas();
+}
+
+function renderVehs(){
+  var tb = document.getElementById('veh-tbody');
+  // Guardar valores existentes antes de limpiar
+  var saved = {};
+  tb.querySelectorAll('tr').forEach(function(tr){
+    var vid = tr.getAttribute('data-vid');
+    if(!vid) return;
+    saved[vid] = {};
+    tr.querySelectorAll('input,select').forEach(function(el){
+      saved[vid][el.getAttribute('data-f')] = el.value;
+    });
+  });
+  tb.innerHTML = '';
+  vehs.forEach(function(v, i){
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-vid', v.id);
+    // Número
+    var tdN = document.createElement('td');
+    tdN.textContent = i+1;
+    tdN.style.fontWeight = '600';
+    tdN.style.color = 'var(--suave)';
+    tr.appendChild(tdN);
+    // Plan
+    var sel = document.createElement('select');
+    sel.className = 'sel';
+    sel.setAttribute('data-f','plan');
+    ['Full','Básico','RC'].forEach(function(p){
+      var o = document.createElement('option');
+      o.value = p; o.textContent = p;
+      sel.appendChild(o);
+    });
+    if(saved[v.id] && saved[v.id]['plan']) sel.value = saved[v.id]['plan'];
+    tr.appendChild(makeTd(sel));
+    // Campos texto
+    [
+      ['tipo','Jeep / Automóvil / Camioneta'],
+      ['modelo','Marca Modelo'],
+      ['anio','2025'],
+      ['placa','Placa / Chasis'],
+      ['valor','RD$ 0.00'],
+    ].forEach(function(f){
+      var inp = makeInput(f[1], saved[v.id] ? saved[v.id][f[0]] : '');
+      inp.setAttribute('data-f', f[0]);
+      if(f[0]==='anio') inp.style.width='55px';
+      if(f[0]==='modelo') inp.addEventListener('input', rebuildPrimas);
+      tr.appendChild(makeTd(inp));
+    });
+    // Eliminar
+    var btnD = document.createElement('button');
+    btnD.className = 'btn-del';
+    btnD.textContent = '✕';
+    btnD.onclick = (function(vid){return function(){delVeh(vid);};})(v.id);
+    tr.appendChild(makeTd(btnD));
+    tb.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ASEGURADORAS
+// ═══════════════════════════════════════════════════
+function addAseg(){
+  asegId++;
+  var id = 'aseg' + asegId;
+  var pal = PALETA[(aseguradoras.length) % PALETA.length];
+  aseguradoras.push({id:id, pal:pal});
+  // TH comparativo
+  var th = document.createElement('th');
+  th.id = 'cth_' + id;
+  th.style.cssText = 'background:'+pal.bg+';color:'+pal.txt+';border-bottom-color:'+pal.brd+';min-width:140px;';
+  var btnX = document.createElement('button');
+  btnX.className = 'btn-del-col';
+  btnX.textContent = '✕';
+  btnX.onclick = (function(aid){return function(){delAseg(aid);};})(id);
+  var inp = document.createElement('input');
+  inp.className = 'aseg-name-inp';
+  inp.placeholder = 'Nombre aseguradora';
+  inp.style.color = pal.txt;
+  inp.addEventListener('input', rebuildPrimas);
+  th.appendChild(btnX);
+  th.appendChild(inp);
+  document.getElementById('comp-thead').appendChild(th);
+  // Celdas en filas existentes
+  document.querySelectorAll('#comp-tbody tr').forEach(function(tr){
+    if(tr.classList.contains('spacer')) return;
+    var td = document.createElement('td');
+    td.setAttribute('data-aseg', id);
+    if(tr.classList.contains('sec-row')){
+      td.style.background = pal.bg;
+    } else {
+      td.className = 'td-val';
+      var ta = document.createElement('textarea');
+      ta.className = 'val-area';
+      ta.placeholder = 'Completar...';
+      td.appendChild(ta);
+    }
+    tr.appendChild(td);
+  });
+  rebuildPrimas();
+}
+
+function delAseg(id){
+  aseguradoras = aseguradoras.filter(function(a){return a.id!==id;});
+  var th = document.getElementById('cth_'+id);
+  if(th) th.remove();
+  document.querySelectorAll('[data-aseg="'+id+'"]').forEach(function(el){el.remove();});
+  rebuildPrimas();
+}
+
+// ═══════════════════════════════════════════════════
+// COBERTURAS
+// ═══════════════════════════════════════════════════
+function addCob(){
+  var label = prompt('Nombre de la nueva cobertura:');
+  if(!label || !label.trim()) return;
+  insertCobRow({l:label.trim(), v:''});
+}
+
+function insertCobRow(cob){
+  var tbody = document.getElementById('comp-tbody');
+  var tr = document.createElement('tr');
+  var tdL = document.createElement('td');
+  tdL.className = 'td-cob-label';
+  var inpL = document.createElement('input');
+  inpL.className = 'cob-inp';
+  inpL.value = cob.l;
+  inpL.placeholder = 'Nombre cobertura';
+  tdL.appendChild(inpL);
+  tdL.appendChild(document.createTextNode(' '));
+  var btnX = document.createElement('button');
+  btnX.className = 'btn-del';
+  btnX.textContent = '✕';
+  btnX.onclick = function(){tr.remove();};
+  btnX.style.fontSize = '11px';
+  tdL.appendChild(btnX);
+  tr.appendChild(tdL);
+  // Humano (primera aseguradora siempre es Humano guía)
+  aseguradoras.forEach(function(a, ai){
+    var td = document.createElement('td');
+    td.className = 'td-val';
+    td.setAttribute('data-aseg', a.id);
+    var ta = document.createElement('textarea');
+    ta.className = 'val-area';
+    ta.placeholder = 'Completar...';
+    if(ai === 0 && cob.v) ta.value = cob.v; // primera aseguradora = guía Humano
+    td.appendChild(ta);
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+}
+
+function insertSecRow(label){
+  var tbody = document.getElementById('comp-tbody');
+  // spacer
+  var spacer = document.createElement('tr');
+  spacer.className = 'spacer';
+  var tdS = document.createElement('td');
+  tdS.setAttribute('colspan','99');
+  spacer.appendChild(tdS);
+  tbody.appendChild(spacer);
+  // sección
+  var tr = document.createElement('tr');
+  tr.className = 'sec-row';
+  var td = document.createElement('td');
+  td.className = 'td-cob-label sec';
+  td.textContent = label;
+  tr.appendChild(td);
+  aseguradoras.forEach(function(a){
+    var td2 = document.createElement('td');
+    td2.setAttribute('data-aseg', a.id);
+    td2.style.background = a.pal.bg;
+    tr.appendChild(td2);
+  });
+  tbody.appendChild(tr);
+}
+
+// ═══════════════════════════════════════════════════
+// PRIMAS — rebuild completo
+// ═══════════════════════════════════════════════════
+function rebuildPrimas(){
+  var thead = document.getElementById('pr-thead');
+  var tbody = document.getElementById('pr-tbody');
+  var tfoot = document.getElementById('pr-tfoot');
+
+  // Nombres actuales de aseguradoras
+  var nombres = aseguradoras.map(function(a){
+    var th = document.getElementById('cth_'+a.id);
+    var inp = th ? th.querySelector('input') : null;
+    return inp && inp.value ? inp.value : 'Aseguradora';
+  });
+
+  // Guardar valores de primas existentes
+  var savedPrimas = {};
+  tbody.querySelectorAll('tr').forEach(function(tr){
+    var vid = tr.getAttribute('data-pvid');
+    if(!vid) return;
+    savedPrimas[vid] = {};
+    tr.querySelectorAll('input[data-paid]').forEach(function(inp){
+      savedPrimas[vid][inp.getAttribute('data-paid')] = inp.value;
+    });
+  });
+
+  // THEAD
+  thead.innerHTML = '';
+  var thV = document.createElement('th');
+  thV.className = 'th-veh';
+  thV.textContent = 'Vehículo';
+  thead.appendChild(thV);
+  aseguradoras.forEach(function(a, i){
+    var th = document.createElement('th');
+    th.style.cssText = 'background:'+a.pal.bg+';color:'+a.pal.txt+';border-bottom-color:'+a.pal.brd+';min-width:130px;padding:11px 14px;font-size:11px;font-weight:700;text-align:center;';
+    th.textContent = nombres[i];
+    thead.appendChild(th);
+  });
+
+  // TBODY
+  tbody.innerHTML = '';
+  var vehRows = document.querySelectorAll('#veh-tbody tr');
+  vehRows.forEach(function(vrow, i){
+    var vid = vrow.getAttribute('data-vid');
+    var mInp = vrow.querySelector('input[data-f="modelo"]');
+    var nombre = mInp && mInp.value ? mInp.value : 'Vehículo '+(i+1);
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-pvid', vid);
+    var tdN = document.createElement('td');
+    tdN.className = 'td-veh';
+    tdN.textContent = (i+1) + '. ' + nombre;
+    tr.appendChild(tdN);
+    aseguradoras.forEach(function(a){
+      var td = document.createElement('td');
+      td.style.cssText = 'text-align:center;padding:6px 10px;border-bottom:1px solid var(--borde);background:#fff;';
+      var inp = document.createElement('input');
+      inp.type = 'number';
+      inp.step = '0.01';
+      inp.min = '0';
+      inp.className = 'prima-inp';
+      inp.placeholder = '0.00';
+      inp.setAttribute('data-paid', a.id);
+      if(savedPrimas[vid] && savedPrimas[vid][a.id]) inp.value = savedPrimas[vid][a.id];
+      inp.addEventListener('input', calcTotales);
+      td.appendChild(inp);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // TFOOT
+  tfoot.innerHTML = '';
+  var ROWS = [
+    {label:'PRIMA NETA TOTAL', cls:'tot-row tot-neta', lc:'rgba(255,255,255,0.6)', id:'tn'},
+    {label:'ISC 16%',           cls:'tot-row tot-isc',  lc:'rgba(255,255,255,0.5)', id:'ti'},
+    {label:'TOTAL A PAGAR',     cls:'tot-row tot-final',lc:'var(--dorado2)',         id:'tf'},
+  ];
+  ROWS.forEach(function(row){
+    var tr = document.createElement('tr');
+    tr.className = row.cls;
+    var tdL = document.createElement('td');
+    tdL.style.cssText = 'padding:10px 14px;text-align:right;color:'+row.lc+';font-size:11px;font-weight:700;letter-spacing:1px;';
+    tdL.textContent = row.label;
+    tr.appendChild(tdL);
+    aseguradoras.forEach(function(a){
+      var td = document.createElement('td');
+      td.id = row.id+'_'+a.id;
+      td.style.cssText = 'padding:10px 14px;text-align:center;font-weight:700;font-size:'+(row.id==='tf'?'14':'12')+'px;color:'+a.pal.tot+';';
+      td.textContent = 'RD$ 0.00';
+      tr.appendChild(td);
+    });
+    tfoot.appendChild(tr);
+  });
+
+  calcTotales();
+}
+
+function calcTotales(){
+  aseguradoras.forEach(function(a){
+    var inputs = document.querySelectorAll('input[data-paid="'+a.id+'"]');
+    var total = 0;
+    inputs.forEach(function(inp){ total += parseFloat(inp.value)||0; });
+    var isc = total * 0.16;
+    var fin = total + isc;
+    var tn = document.getElementById('tn_'+a.id);
+    var ti = document.getElementById('ti_'+a.id);
+    var tf = document.getElementById('tf_'+a.id);
+    if(tn) tn.textContent = fmt(total);
+    if(ti) ti.textContent = fmt(isc);
+    if(tf) tf.textContent = fmt(fin);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// INICIALIZAR
+// ═══════════════════════════════════════════════════
+(function init(){
+  // TH label comparativo
+  var thead = document.getElementById('comp-thead');
+  var thL = document.createElement('th');
+  thL.className = 'th-cob';
+  thL.textContent = 'Cobertura';
+  thead.appendChild(thL);
+
+  // 4 aseguradoras (primera = Humano guía)
+  addAseg(); addAseg(); addAseg(); addAseg();
+
+  // Nombre primera = Humano Seguros
+  var firstTh = document.getElementById('cth_aseg1');
+  if(firstTh){
+    var inp = firstTh.querySelector('input');
+    if(inp) inp.value = 'Humano Seguros';
+  }
+
+  // Poblar coberturas con datos guía en columna Humano
+  COBERTURAS.forEach(function(cob){
+    if(cob.s){ insertSecRow(cob.l); }
+    else      { insertCobRow(cob);  }
+  });
+
+  // Un vehículo inicial
+  addVeh();
+})();
+</script>
+</body>
+</html>
