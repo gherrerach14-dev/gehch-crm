@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Comparativo de Seguros de Auto — GEHCH</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--azul:#0a1628;--azul2:#1a3a6b;--dorado:#c9a84c;--dorado2:#f0d080;--gris:#f4f6fa;--borde:#e2e8f0;--texto:#1a202c;--suave:#64748b;--verde:#16a34a;--rojo:#dc2626;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f0f4f8;color:var(--texto);}
+.page{max-width:1200px;margin:0 auto;padding:28px 20px;}
+.header{background:var(--azul);border-radius:18px;padding:30px 36px;margin-bottom:20px;}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;}
+.brand-nombre{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:4px;line-height:1;}
+.brand-sub{font-size:11px;color:var(--dorado);letter-spacing:2.5px;text-transform:uppercase;font-weight:600;margin-top:4px;}
+.doc-info{text-align:right;}
+.doc-title{font-family:'Playfair Display',serif;font-size:20px;color:#fff;font-weight:700;}
+.doc-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;}
+.cliente-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:20px;}
+.ci{background:rgba(255,255,255,0.06);border-radius:8px;padding:10px 14px;border:1px solid rgba(255,255,255,0.08);}
+.ci-label{font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.ci-input{width:100%;background:transparent;border:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;outline:none;}
+.ci-input::placeholder{color:rgba(255,255,255,0.25);font-style:italic;}
+.instruccion{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#92400e;display:flex;gap:8px;}
+.section-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--azul);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--dorado);display:inline-block;}
+.tabla-wrap{overflow-x:auto;margin-bottom:20px;border-radius:12px;border:1px solid var(--borde);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:var(--azul);color:#fff;}
+thead th{padding:10px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:0.4px;white-space:nowrap;}
+tbody tr:nth-child(even){background:var(--gris);}
+tbody tr:hover{background:#e8f0fe;}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--borde);vertical-align:middle;}
+.td-edit{background:transparent;border:none;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--texto);outline:none;width:100%;}
+.td-edit::placeholder{color:#cbd5e1;font-style:italic;}
+.btn-del{background:none;border:none;cursor:pointer;color:#fca5a5;font-size:14px;padding:2px 6px;border-radius:4px;}
+.btn-del:hover{color:#dc2626;}
+.btn-add{display:inline-flex;align-items:center;gap:6px;background:var(--azul);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;}
+.btn-add:hover{background:var(--azul2);}
+.comp-container{border-radius:14px;overflow:hidden;border:1px solid var(--borde);margin-bottom:20px;overflow-x:auto;}
+.comp-table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px;}
+.comp-table th{padding:12px 14px;text-align:center;font-weight:700;font-size:11px;border-bottom:3px solid;white-space:nowrap;}
+.th-label{background:var(--azul);color:rgba(255,255,255,0.6);text-align:left!important;font-size:10px;text-transform:uppercase;letter-spacing:0.8px;border-bottom:3px solid rgba(255,255,255,0.1)!important;min-width:180px;}
+.th-aseg-input{width:100%;background:transparent;border:none;font-weight:700;font-size:12px;text-align:center;outline:none;font-family:'DM Sans',sans-serif;}
+.comp-table td{padding:10px 12px;border-bottom:1px solid var(--borde);vertical-align:middle;}
+.td-label{background:var(--azul);color:rgba(255,255,255,0.75);font-size:11px;padding:10px 14px;}
+.td-label.section-lbl{background:#1e3a5f;color:var(--dorado2);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:1px;}
+.td-cell{text-align:center;background:#fff;}
+.td-cell textarea{width:100%;border:none;background:transparent;font-size:11px;font-family:'DM Sans',sans-serif;text-align:center;outline:none;resize:none;min-height:32px;line-height:1.4;}
+.td-cell textarea::placeholder{color:#cbd5e1;font-style:italic;font-size:10px;}
+.section-spacer-row td{height:3px;background:var(--gris);padding:0;}
+.btn-del-row{background:none;border:none;cursor:pointer;color:#fca5a5;font-size:12px;padding:1px 4px;}
+.btn-del-row:hover{color:#dc2626;}
+.btn-del-col{background:none;border:none;cursor:pointer;color:#fca5a5;font-size:11px;padding:2px 4px;display:block;margin:0 auto 4px;}
+.btn-del-col:hover{color:#dc2626;}
+.btn-add-cob{display:inline-flex;align-items:center;gap:5px;background:rgba(10,22,40,0.08);color:var(--azul2);border:1px dashed var(--azul2);border-radius:6px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;margin:0 0 12px 0;}
+.btn-add-aseg{display:inline-flex;align-items:center;gap:5px;background:var(--dorado);color:var(--azul);border:none;border-radius:6px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;margin-bottom:12px;}
+.recom{background:var(--azul);border-radius:14px;padding:22px 26px;margin:20px 0;}
+.recom-title{font-family:'Playfair Display',serif;font-size:14px;color:var(--dorado);margin-bottom:10px;}
+.recom-area{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;min-height:70px;outline:none;resize:vertical;}
+.recom-area::placeholder{color:rgba(255,255,255,0.3);font-style:italic;}
+.footer{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;background:var(--azul);border-radius:10px;}
+.footer-left{font-size:11px;color:rgba(255,255,255,0.45);}
+.footer-right{font-family:'Playfair Display',serif;font-size:14px;color:var(--dorado);letter-spacing:2px;}
+.btn-imprimir{position:fixed;bottom:20px;right:20px;background:var(--dorado);color:var(--azul);border:none;border-radius:99px;padding:12px 22px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,0.5);z-index:100;}
+@media print{.btn-imprimir,.instruccion,.btn-del,.btn-del-row,.btn-del-col,.btn-add,.btn-add-cob,.btn-add-aseg{display:none!important;}body{background:#fff;}.page{padding:10px;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="brand-nombre">GEHCH</div>
+      <div class="brand-sub">Corredores de Seguros</div>
+    </div>
+    <div class="doc-info">
+      <div class="doc-title">Análisis Comparativo de Coberturas</div>
+      <div class="doc-sub">Seguro de Automóvil</div>
+    </div>
+  </div>
+  <div class="cliente-grid">
+    <div class="ci"><div class="ci-label">Cliente</div><input class="ci-input" placeholder="Nombre del cliente"/></div>
+    <div class="ci"><div class="ci-label">RNC / Cédula</div><input class="ci-input" placeholder="000-000000-0"/></div>
+    <div class="ci"><div class="ci-label">Vigencia desde</div><input class="ci-input" type="date"/></div>
+    <div class="ci"><div class="ci-label">Vigencia hasta</div><input class="ci-input" type="date"/></div>
+    <div class="ci"><div class="ci-label">Intermediario</div><input class="ci-input" value="Guillermo E. Herrera Chacón"/></div>
+  </div>
+</div>
+
+<div class="instruccion">✏️ <span><strong>Plantilla GEHCH.</strong> Complete los datos del cliente, agregue o elimine vehículos, aseguradoras y coberturas. Use <strong>Imprimir / PDF</strong> para entregar.</span></div>
+
+<div class="section-title">Vehículos Asegurados</div>
+<div class="tabla-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Plan</th><th>Tipo</th><th>Marca / Modelo</th><th>Año</th><th>Placa</th><th>Valor Asegurado</th><th></th></tr></thead>
+    <tbody id="tbody-vehiculos">
+      <tr>
+        <td>1</td>
+        <td><select class="td-edit" style="width:80px;"><option>Full</option><option>Básico</option><option>RC</option></select></td>
+        <td><input class="td-edit" placeholder="Jeep/Auto..."/></td>
+        <td><input class="td-edit" placeholder="Marca Modelo"/></td>
+        <td><input class="td-edit" placeholder="2025" style="width:50px;"/></td>
+        <td><input class="td-edit" placeholder="Placa"/></td>
+        <td><input class="td-edit" placeholder="RD$ 0.00"/></td>
+        <td><button class="btn-del" onclick="delVehiculo(this)">✕</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<button class="btn-add" onclick="addVehiculo()">＋ Agregar vehículo</button>
+
+<div class="section-title" style="margin-top:24px;">Primas por Vehículo</div>
+<div class="tabla-wrap"><table id="tabla-primas"><thead><tr id="thead-primas"></tr></thead><tbody id="tbody-primas"></tbody><tfoot id="tfoot-primas"></tfoot></table></div>
+
+<div class="section-title" style="margin-top:24px;">Cuadro Comparativo de Coberturas</div>
+<button class="btn-add-aseg" onclick="addAseguradora()">＋ Agregar aseguradora</button>
+<div class="comp-container">
+  <table class="comp-table"><thead><tr id="comp-thead"></tr></thead><tbody id="comp-tbody"></tbody></table>
+</div>
+<button class="btn-add-cob" onclick="addCobertura()">＋ Agregar cobertura</button>
+
+<div class="recom">
+  <div class="recom-title">💡 Recomendación del Corredor</div>
+  <textarea class="recom-area" placeholder="Escriba aquí su análisis y recomendación para el cliente..."></textarea>
+</div>
+
+<div class="footer">
+  <div class="footer-left">GEHCH Corredores de Seguros · gherrera@gehchseguros.com · (809) 284-7898 · República Dominicana</div>
+  <div class="footer-right">GEHCH</div>
+</div>
+
+</div>
+<button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / PDF</button>
+
+<script>
+var aseguradoras=[];
+var vCount=1;
+var COLORES=[
+  {bg:'#e0f7fa',color:'#006d8c',border:'#00b4d8',tot:'#c9a84c',isc:'#c9a84c',fin:'#c9a84c'},
+  {bg:'#f0fdf4',color:'#166534',border:'#22c55e',tot:'#4ade80',isc:'#86efac',fin:'#4ade80'},
+  {bg:'#fefce8',color:'#854d0e',border:'#eab308',tot:'#fbbf24',isc:'#fde68a',fin:'#fbbf24'},
+  {bg:'#fdf4ff',color:'#7e22ce',border:'#a855f7',tot:'#c084fc',isc:'#e9d5ff',fin:'#c084fc'},
+  {bg:'#fff1f2',color:'#9f1239',border:'#f43f5e',tot:'#fb7185',isc:'#fda4af',fin:'#fb7185'},
+];
+var COBERTURAS=[
+  {s:true,l:'DAÑOS PROPIOS'},
+  {l:'Pérd. Daños Mat. Parcial — Deducible'},
+  {l:'Pérd. Daños Mat. Total — Deducible'},
+  {l:'Pérd. Robo o Hurto Parcial'},
+  {l:'Pérd. Robo o Hurto Total'},
+  {l:'Rotación de Cristales'},
+  {l:'Inundación y/o Daños por Agua'},
+  {s:true,l:'RESPONSABILIDAD CIVIL A TERCEROS'},
+  {l:'Daños Materiales — Un Tercero'},
+  {l:'Daños Materiales — Más de un Tercero'},
+  {l:'Lesiones Corporales — Un Tercero'},
+  {l:'Lesiones Corporales — Más de un Tercero'},
+  {s:true,l:'SERVICIOS INCLUIDOS'},
+  {l:'Asistencia Vial'},
+  {l:'Casa Cárcel'},
+  {l:'Defensa Legal'},
+  {l:'Accidentes Personales Conductor'},
+  {l:'Gastos Médicos Conductor'},
+  {l:'Fianza Judicial'},
+];
+
+function fmt(n){return 'RD$ '+n.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function addVehiculo(){
+  vCount++;
+  var tb=document.getElementById('tbody-vehiculos');
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td>'+vCount+'</td>'+
+    '<td><select class="td-edit" style="width:80px;"><option>Full</option><option>Básico</option><option>RC</option></select></td>'+
+    '<td><input class="td-edit" placeholder="Jeep/Auto..."/></td>'+
+    '<td><input class="td-edit" placeholder="Marca Modelo"/></td>'+
+    '<td><input class="td-edit" placeholder="2025" style="width:50px;"/></td>'+
+    '<td><input class="td-edit" placeholder="Placa"/></td>'+
+    '<td><input class="td-edit" placeholder="RD$ 0.00"/></td>'+
+    '<td><button class="btn-del" onclick="delVehiculo(this)">✕</button></td>';
+  tb.appendChild(tr);
+  rebuildPrimas();
+}
+
+function delVehiculo(btn){
+  btn.closest('tr').remove();
+  document.querySelectorAll('#tbody-vehiculos tr').forEach(function(r,i){r.cells[0].textContent=i+1;});
+  vCount=document.querySelectorAll('#tbody-vehiculos tr').length;
+  rebuildPrimas();
+}
+
+function addAseguradora(){
+  var id='a'+Date.now();
+  var c=COLORES[aseguradoras.length%COLORES.length];
+  aseguradoras.push({id:id,c:c});
+  // thead comparativo
+  var th=document.createElement('th');
+  th.id='th_'+id;
+  th.style.cssText='background:'+c.bg+';color:'+c.color+';border-bottom:3px solid '+c.border+';min-width:130px;';
+  th.innerHTML='<button class="btn-del-col" onclick="delAseguradora(''+id+'')">✕</button>'+
+    '<input class="th-aseg-input" placeholder="Aseguradora" style="color:'+c.color+';" oninput="syncNombres()"/>';
+  document.getElementById('comp-thead').appendChild(th);
+  // celdas en filas existentes
+  document.querySelectorAll('#comp-tbody tr').forEach(function(tr){
+    var td=document.createElement('td');
+    td.setAttribute('data-aseg',id);
+    if(tr.getAttribute('data-s')==='1'){
+      td.style.background=c.bg;
+    } else {
+      td.className='td-cell';
+      td.innerHTML='<textarea placeholder="Completar..."></textarea>';
+    }
+    tr.appendChild(td);
+  });
+  rebuildPrimas();
+}
+
+function delAseguradora(id){
+  aseguradoras=aseguradoras.filter(function(a){return a.id!==id;});
+  var th=document.getElementById('th_'+id);
+  if(th)th.remove();
+  document.querySelectorAll('[data-aseg="'+id+'"]').forEach(function(el){el.remove();});
+  rebuildPrimas();
+}
+
+function addCobertura(){
+  var label=prompt('Nombre de la cobertura:');
+  if(!label)return;
+  var tbody=document.getElementById('comp-tbody');
+  var tr=document.createElement('tr');
+  var td=document.createElement('td');
+  td.className='td-label';
+  td.innerHTML='<input style="background:transparent;border:none;color:rgba(255,255,255,0.75);font-size:11px;font-family:DM Sans,sans-serif;outline:none;width:calc(100% - 24px);" value="'+label+'"/>'+
+    ' <button class="btn-del-row" onclick="delCobertura(this)">✕</button>';
+  tr.appendChild(td);
+  aseguradoras.forEach(function(a){
+    var td2=document.createElement('td');
+    td2.className='td-cell';
+    td2.setAttribute('data-aseg',a.id);
+    td2.innerHTML='<textarea placeholder="Completar..."></textarea>';
+    tr.appendChild(td2);
+  });
+  tbody.appendChild(tr);
+}
+
+function delCobertura(btn){btn.closest('tr').remove();}
+
+function rebuildPrimas(){
+  var vehs=document.querySelectorAll('#tbody-vehiculos tr');
+  // thead
+  var thead=document.getElementById('thead-primas');
+  thead.innerHTML='<th style="text-align:left;min-width:160px;background:var(--azul);color:#fff;padding:10px 12px;">Vehículo</th>';
+  aseguradoras.forEach(function(a){
+    var th=document.createElement('th');
+    th.style.cssText='background:'+a.c.bg+';color:'+a.c.color+';border-bottom:3px solid '+a.c.border+';text-align:center;min-width:130px;padding:10px 12px;';
+    var inp=document.querySelector('#th_'+a.id+' input');
+    th.textContent=inp&&inp.value?inp.value:(inp?inp.placeholder:'Aseguradora');
+    thead.appendChild(th);
+  });
+  // tbody
+  var tbody=document.getElementById('tbody-primas');
+  tbody.innerHTML='';
+  vehs.forEach(function(vrow,i){
+    var inp=vrow.cells[3]?vrow.cells[3].querySelector('input'):null;
+    var nombre=inp&&inp.value?inp.value:'Vehículo '+(i+1);
+    var tr=document.createElement('tr');
+    var td=document.createElement('td');
+    td.style.cssText='padding:8px 12px;font-weight:600;font-size:12px;';
+    td.textContent=(i+1)+'. '+nombre;
+    tr.appendChild(td);
+    aseguradoras.forEach(function(a){
+      var tdp=document.createElement('td');
+      tdp.style.cssText='text-align:center;background:#fff;padding:4px 8px;border-bottom:1px solid var(--borde);';
+      var pinp=document.createElement('input');
+      pinp.type='number';
+      pinp.placeholder='0.00';
+      pinp.style.cssText='width:100%;border:none;border-bottom:1px dashed #e2e8f0;background:transparent;font-size:12px;font-family:DM Sans,sans-serif;text-align:center;outline:none;padding:5px 2px;';
+      pinp.setAttribute('data-ap',a.id);
+      pinp.addEventListener('input',calcTotales);
+      tdp.appendChild(pinp);
+      tr.appendChild(tdp);
+    });
+    tbody.appendChild(tr);
+  });
+  // tfoot
+  var tfoot=document.getElementById('tfoot-primas');
+  tfoot.innerHTML='';
+  var rows=[
+    {label:'PRIMA NETA TOTAL',bg:'#0a1628',lc:'rgba(255,255,255,0.6)',fs:'13px',fw:'700',idpfx:'tn'},
+    {label:'ISC 16%',bg:'#1a3a6b',lc:'rgba(255,255,255,0.5)',fs:'12px',fw:'400',idpfx:'ti'},
+    {label:'TOTAL A PAGAR',bg:'#0a1628',lc:'#c9a84c',fs:'15px',fw:'900',idpfx:'tf',topborder:true},
+  ];
+  rows.forEach(function(row){
+    var tr=document.createElement('tr');
+    tr.style.background=row.bg;
+    if(row.topborder)tr.style.borderTop='2px solid #c9a84c';
+    var tdl=document.createElement('td');
+    tdl.style.cssText='padding:10px 12px;text-align:right;color:'+row.lc+';font-size:11px;font-weight:700;letter-spacing:1px;';
+    tdl.textContent=row.label;
+    tr.appendChild(tdl);
+    aseguradoras.forEach(function(a){
+      var tdc=document.createElement('td');
+      tdc.id=row.idpfx+'_'+a.id;
+      tdc.style.cssText='padding:10px 12px;text-align:center;font-size:'+row.fs+';font-weight:'+row.fw+';color:'+a.c.tot+';';
+      tdc.textContent='RD$ 0.00';
+      tr.appendChild(tdc);
+    });
+    tfoot.appendChild(tr);
+  });
+}
+
+function calcTotales(){
+  aseguradoras.forEach(function(a){
+    var inputs=document.querySelectorAll('[data-ap="'+a.id+'"]');
+    var total=0;
+    inputs.forEach(function(inp){total+=parseFloat(inp.value)||0;});
+    var isc=total*0.16;
+    var fin=total+isc;
+    var tn=document.getElementById('tn_'+a.id);
+    var ti=document.getElementById('ti_'+a.id);
+    var tf=document.getElementById('tf_'+a.id);
+    if(tn)tn.textContent=fmt(total);
+    if(ti)ti.textContent=fmt(isc);
+    if(tf)tf.textContent=fmt(fin);
+  });
+}
+
+function syncNombres(){rebuildPrimas();}
+
+document.addEventListener('input',function(e){
+  if(e.target&&e.target.classList.contains('td-edit'))rebuildPrimas();
+});
+
+// INICIALIZAR
+(function(){
+  var tbody=document.getElementById('comp-tbody');
+  var thead=document.getElementById('comp-thead');
+  // th label
+  var th=document.createElement('th');
+  th.className='th-label';
+  th.textContent='Cobertura';
+  thead.appendChild(th);
+  // coberturas
+  COBERTURAS.forEach(function(cob){
+    if(cob.s){
+      var spacer=document.createElement('tr');
+      spacer.className='section-spacer-row';
+      spacer.innerHTML='<td colspan="99"></td>';
+      tbody.appendChild(spacer);
+      var tr=document.createElement('tr');
+      tr.setAttribute('data-s','1');
+      var td=document.createElement('td');
+      td.className='td-label section-lbl';
+      td.textContent=cob.l;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    } else {
+      var tr=document.createElement('tr');
+      var td=document.createElement('td');
+      td.className='td-label';
+      td.innerHTML='<input style="background:transparent;border:none;color:rgba(255,255,255,0.75);font-size:11px;font-family:DM Sans,sans-serif;outline:none;width:calc(100% - 24px);" value="'+cob.l+'"/>'+
+        ' <button class="btn-del-row" onclick="delCobertura(this)">✕</button>';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+  });
+  // 4 aseguradoras default
+  addAseguradora();addAseguradora();addAseguradora();addAseguradora();
+})();
+</script>
+</body>
+</html>
