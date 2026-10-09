@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="google" content="notranslate"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="color-scheme" content="light dark"/>
 <meta name="theme-color" content="#0a1628"/>
 <meta name="robots" content="noindex, nofollow"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -24,6 +25,7 @@
     --navy:#0a1628; --navy2:#13284a; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
     --bg:#f2f4f8; --card:#ffffff; --ok:#16a34a; --warn:#d97706; --bad:#dc2626; --blue:#2563eb;
   }
+  :root{color-scheme:light dark}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
   body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;min-height:100vh}
@@ -55,7 +57,9 @@
   .link{background:none;border:none;color:var(--blue);font-weight:700;cursor:pointer;padding:6px 0;font-size:15px}
   .opts{display:flex;gap:8px;flex-wrap:wrap}
   .opt{flex:1 1 140px;border:1.5px solid var(--line);background:#f8fafc;border-radius:10px;padding:12px;text-align:center;font-weight:700;cursor:pointer;font-size:15px}
-  .opt.on{border-color:var(--navy);background:#eaf0fb;color:var(--navy)}
+  .opt.on{border-color:var(--navy);background:var(--navy);color:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.35)}
+  .opt.on .muted{color:#cbd5e1!important}
+  .opt.on::before{content:"✓ Seleccionado";display:block;font-size:12px;font-weight:800;color:#86efac;margin-bottom:4px}
   .aviso{border-radius:10px;padding:11px 12px;font-size:14px;margin-top:10px}
   .aviso.info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
   .aviso.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
@@ -86,6 +90,9 @@
   .check{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px}
   .check input{width:22px;height:22px;flex-shrink:0;margin-top:1px}
   .foot{color:#94a3b8;font-size:12px;text-align:center;margin-top:24px}
+  .velo{position:fixed;inset:0;background:rgba(10,22,40,.82);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px}
+  .velo .caja{background:#fff;color:#0f172a;border-radius:16px;padding:22px;max-width:360px;width:100%;text-align:center}
+  .velo .caja b{display:block;font-size:18px;margin-bottom:6px}
   .hero{background:linear-gradient(160deg,#0a1628 0%,#13284a 100%);color:#fff;border-radius:18px;padding:26px 20px 22px;text-align:center;margin-bottom:14px}
   .hero .logo{background:#fff;border-radius:14px;padding:10px 14px;display:inline-block;margin-bottom:16px}
   .hero .logo img{height:84px;width:auto;display:block}
@@ -95,7 +102,34 @@
   .paso{display:flex;gap:12px;align-items:flex-start}
   .paso b{flex-shrink:0;width:30px;height:30px;border-radius:99px;background:#eaf0fb;color:#0a1628;display:flex;align-items:center;justify-content:center;font-size:14px}
   .paso div{font-size:15px;padding-top:4px}
+  .miembro{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eef2f7}
+  .miembro:last-child{border-bottom:none}
+  .avatar{width:42px;height:42px;border-radius:99px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(135deg,#13284a,#2563eb)}
+  .avatar.tit{background:linear-gradient(135deg,#0a1628,#0f766e)}
+  .ok-ico{width:24px;height:24px;border-radius:99px;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0}
+  .pend-ico{font-size:11px;font-weight:800;color:#92400e;background:#fef3c7;border-radius:99px;padding:3px 8px;flex-shrink:0}
+  .rol{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+  details.agregar summary{cursor:pointer;color:var(--blue);font-weight:700;list-style:none;padding:4px 0}
+  details.agregar summary::-webkit-details-marker{display:none}
+  @media (prefers-color-scheme: dark){ .miembro{border-color:#1f2a3d} }
   .seguro{display:flex;gap:10px;align-items:flex-start;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:12px;padding:12px;font-size:13px;margin-top:4px}
+  @media (prefers-color-scheme: dark){
+    :root{--ink:#e5e7eb;--muted:#9ca3af;--line:#334155;--bg:#0b1220;--card:#111a2b}
+    .card{border-color:#1f2a3d;box-shadow:none}
+    input.f,select.f,textarea.f{background:#0f172a;color:#e5e7eb}
+    input.f:focus,select.f:focus,textarea.f:focus{background:#0b1220}
+    .opt{background:#0f172a;border-color:#334155}
+    .opt.on{background:#2563eb;border-color:#93c5fd;color:#fff}
+    .btn{background:#2563eb}.btn.sec{background:#1f2a3d;color:#e5e7eb}.btn.ok{background:#16a34a}
+    .proc{background:#0f172a}.legal{background:#0f172a;color:#cbd5e1}
+    .paso b{background:#1f2a3d;color:#e5e7eb}
+    .li{border-color:#1f2a3d}.thumb,.file-btn{background:#0f172a;color:#cbd5e1}
+    label.l{color:#94a3b8}.link{color:#60a5fa}
+    .aviso.info{background:#0c1d3a;color:#bfdbfe;border-color:#1e3a8a}
+    .aviso.warn{background:#2b1d05;color:#fde68a;border-color:#78350f}
+    .aviso.bad{background:#2a0e0e;color:#fecaca;border-color:#7f1d1d}
+    .aviso.ok,.seguro{background:#052e1a;color:#bbf7d0;border-color:#14532d}
+  }
 </style>
 </head>
 <body>
@@ -114,13 +148,27 @@
 const RC_CONFIG = {"apiKey": "AIzaSyAciJMmRKX57febZ5hWzXol105SOlk3W1A", "authDomain": "gehch-reclamos.firebaseapp.com", "projectId": "gehch-reclamos", "storageBucket": "gehch-reclamos.firebasestorage.app", "messagingSenderId": "329127424876", "appId": "1:329127424876:web:a627b2a2e2e8a56bdf7949"};
 const WHATSAPP_GEHCH = "18092847898";   // solo dígitos, ej. 18095551234 ("" = sin botón)
 const VERSION_CONSENTIMIENTO = "2026-10-v1";
+// Avisos automáticos a GEHCH al recibir un reclamo ("" = desactivado)
+const AVISO_NTFY = "gehch-reclamos-97grsmymu97cmr";          // canal privado de la app ntfy en el celular de Guillermo
+const AVISO_EMAILJS = {"service_id":"service_la1vpwy","template_id":"template_pj679wq","public_key":"iyY3HcObkulFCVbs_"};      // {service_id, template_id, public_key} o null
+const CRM_URL = "https://gherrerach14-dev.github.io/gehch-crm/CRM-GEHCH_83.html";
 
 const PROCEDIMIENTOS = ["Consultas","Medicamentos","Laboratorios","Diagnóstico por Imágenes y Estudios","Emergencia","Hospitalización","Vacunas","Chequeo Médico de Rutina"];
+// Qué documento adicional se le pide amablemente según el servicio (null = solo el recibo)
+const DOC_EXTRA = {
+  "Consultas": null, "Emergencia": null, "Chequeo Médico de Rutina": null,
+  "Medicamentos": "Receta médica",
+  "Laboratorios": "Indicación médica",
+  "Diagnóstico por Imágenes y Estudios": "Indicación médica",
+  "Hospitalización": "Informe o indicación médica",
+  "Vacunas": "Indicación o receta médica",
+};
 const PARENTESCOS = ["Titular","Cónyuge","Hijo/a","Padre/Madre","Otro"];
 const BANCOS = ["Banco de Reservas","Banco Popular Dominicano","Banco BHD","Scotiabank","Banco Santa Cruz","Banco Promerica","Banesco","Banco Caribe","Banco BDI","Banco Vimenca","Banco López de Haro","Banco Ademi","Banco Lafise","Citibank","Asociación Popular de Ahorros y Préstamos","Asociación Cibao de Ahorros y Préstamos","Asociación La Nacional de Ahorros y Préstamos","Otro"];
 // Plazos para reclamar (días desde la fecha del servicio). Aseguradora sin plazo = solo aviso general.
 const PLAZOS = { "Seguros Reservas": { Local: 90, Extranjero: 180 } };
-const COLOR_ESTADO = { "Recibido":"#2563eb", "Enviado a aseguradora":"#7c3aed", "Documentos adicionales":"#d97706", "Pagado":"#16a34a", "Rechazado":"#dc2626" };
+const etiquetaEstado = (r) => r.estado==="Documentos adicionales" ? (r.origenDocs==="aseguradora" ? "Solicitado por aseguradora" : "Incompleto") : r.estado;
+const COLOR_ESTADO = { "Incompleto":"#d97706", "Solicitado por aseguradora":"#db2777", "Recibido":"#2563eb", "Enviado a aseguradora":"#7c3aed", "Documentos adicionales":"#d97706", "Pagado":"#16a34a", "Rechazado":"#dc2626" };
 const MAX_CHARS = 880000;      // tamaño máximo de cada pedazo guardado (base64)
 const MAX_PDF = 4 * 1024 * 1024;
 
@@ -143,7 +191,7 @@ function el(tag, attrs, ...hijos){
   }
   return n;
 }
-function pintar(...nodos){ $app.replaceChildren(...nodos.flat()); window.scrollTo(0,0); }
+function pintar(...nodos){ $app.replaceChildren(...nodos.flat(Infinity).filter(n=>n!==null&&n!==undefined&&n!==false)); window.scrollTo(0,0); }
 const hoyISO = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const diasDesde = (iso) => { const a=new Date(iso+"T00:00:00"); const h=new Date(); h.setHours(0,0,0,0); return Math.round((h-a)/86400000); };
 const fmtFecha = (iso) => { if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
@@ -322,7 +370,7 @@ function chipEstado(estado){
   return el("span",{class:"chip", style:`background:${c}1f;color:${c}`}, estado);
 }
 function pantallaInicio(){
-  const nombre = (S.cli.nombre||"").split(" ")[0];
+  const nombre = nombrePropio((S.cli.nombre||"").split(" ")[0]);
   const pendientes = S.reclamos.filter(r=>r.estado==="Documentos adicionales" && !r.adicionalesEnviados);
   const sinAsegurados = S.asegurados.length === 0;
   pintar(
@@ -340,7 +388,7 @@ function pantallaInicio(){
       S.reclamos.slice(0,30).map(r=> el("div",{class:"li", style:"cursor:pointer", onclick:()=>pantallaDetalle(r)},
         el("div",null, el("div",{style:"font-weight:800"}, r.paciente?.nombre || ""),
           el("div",{class:"muted"}, `${r.id} · ${fmtFechaMs(r.creadoMs)} · ${(r.procedimientos||[]).length} proc.`)),
-        chipEstado(r.estado)))
+        chipEstado(etiquetaEstado(r))))
     ),
     el("div",{class:"card"},
       el("div",{class:"li", style:"cursor:pointer", onclick:()=>pantallaAsegurados(false)},
@@ -352,7 +400,10 @@ function pantallaInicio(){
 }
 
 // ═══ PANTALLA: ASEGURADOS ════════════════════════════════════════════════════
+function iniciales(n){ const p=(n||"").split(" ").filter(Boolean); return ((p[0]||"")[0]||"")+((p.length>2?p[p.length-2]:p[1]||"")[0]||""); }
+function nombrePropio(n){ return (n||"").toLowerCase().replace(/(^|\s)\S/g, c=>c.toUpperCase()); }
 function pantallaAsegurados(desdeInicio){
+  const todosOk = S.asegurados.length>0 && S.asegurados.every(a=>a.validado);
   const nom = el("input",{class:"f", placeholder:"Ej.: Juan Pérez Gómez", autocapitalize:"characters"});
   const par = el("select",{class:"f"}, PARENTESCOS.map(p=>el("option",{value:p},p)));
   if(!S.asegurados.some(a=>a.parentesco==="Titular")) { par.value = "Titular"; nom.value = S.cli.nombre||""; }
@@ -371,18 +422,21 @@ function pantallaAsegurados(desdeInicio){
   pintar(
     el("button",{class:"link", onclick:()=>pantallaInicio()},"‹ Volver"),
     el("h1",null,"Mi familia asegurada"),
-    el("p",{class:"sub"},"Escriba los nombres tal como aparecen en el carnet del seguro. GEHCH los verifica con la aseguradora."),
+    el("p",{class:"sub"}, todosOk
+      ? "Su familia asegurada ya está registrada y verificada por GEHCH, tal como aparece en su póliza."
+      : S.asegurados.length ? "GEHCH verificará los nombres con su aseguradora." : "Escriba los nombres tal como aparecen en el carnet del seguro."),
+    todosOk ? el("div",{class:"seguro", style:"margin-bottom:14px"}, el("span",null,"✅"), el("span",null,`${S.asegurados.length} asegurado${S.asegurados.length===1?"":"s"} en su póliza ${(S.cli.polizas||[])[0]?.aseguradora ? "de "+S.cli.polizas[0].aseguradora : ""}.`)) : null,
     el("div",{class:"card"},
       S.asegurados.length === 0 ? el("p",{class:"muted"},"Todavía no hay nadie registrado.") :
-      S.asegurados.map(a=>el("div",{class:"li"},
-        el("div",null, el("div",{style:"font-weight:800"},a.nombre), el("div",{class:"muted"},a.parentesco)),
-        a.validado ? el("span",{class:"chip", style:"background:#dcfce7;color:#166534"},"Verificado") : el("span",{class:"chip", style:"background:#fef3c7;color:#92400e"},"Por verificar")))
+      S.asegurados.map(a=>el("div",{class:"miembro"},
+        el("div",{class:"avatar"+(a.parentesco==="Titular"?" tit":"")}, iniciales(a.nombre)),
+        el("div",{style:"flex:1;min-width:0"}, el("div",{style:"font-weight:800;line-height:1.25"},nombrePropio(a.nombre)), el("div",{class:"rol"},a.parentesco)),
+        a.validado ? el("span",{class:"ok-ico", title:"Verificado"},"✓") : el("span",{class:"pend-ico"},"Por verificar")))
     ),
-    el("div",{class:"card"},
-      el("h2",null,"Agregar persona"),
-      el("label",{class:"l"},"Nombre completo"), nom,
-      el("label",{class:"l"},"Parentesco"), par, msg, btn
-    ),
+    S.asegurados.length
+      ? el("details",{class:"card agregar"}, el("summary",null,"＋ ¿Falta alguien? Agréguelo aquí"),
+          el("label",{class:"l"},"Nombre completo"), nom, el("label",{class:"l"},"Parentesco"), par, msg, btn)
+      : el("div",{class:"card"}, el("h2",null,"Agregar persona"), el("label",{class:"l"},"Nombre completo"), nom, el("label",{class:"l"},"Parentesco"), par, msg, btn),
     S.asegurados.length ? el("button",{class:"btn sec", onclick:()=>pantallaNuevo()},"Continuar a nuevo reclamo") : null
   );
 }
@@ -396,23 +450,23 @@ function borradorNuevo(){
 function plazoDe(poliza, origen){ const p = PLAZOS[poliza?.aseguradora]; return p ? p[origen] : null; }
 
 function pantallaNuevo(){
-  if(!S.borrador) S.borrador = borradorNuevo();
+  if(!S.borrador){ S.borrador = borradorNuevo(); cargarTodo().then(()=>{ _ultimaCarga=Date.now(); if(S.borrador && !S.borrador.pacienteId && !S.borrador.procs.length) pantallaNuevoMantener(); }).catch(()=>{}); }
   const B = S.borrador;
   const pols = S.cli.polizas || [];
   const poliza = B.poliza !== null ? pols[B.poliza] : null;
   const re = () => pantallaNuevoMantener();
 
-  const secPoliza = el("div",{class:"card"}, el("h2",null,"1. Póliza"),
+  const secPoliza = el("div",{class:"card"}, el("h2",{class:"sec","data-t":"Póliza"},"Póliza"),
     pols.length === 0 ? el("div",{class:"aviso bad"},"No tiene pólizas registradas en el portal. Escriba a GEHCH.") :
     el("div",{class:"opts"}, pols.map((p,i)=>el("div",{class:"opt"+(B.poliza===i?" on":""), onclick:()=>{B.poliza=i; re();}},
       el("div",null,p.aseguradora), el("div",{class:"muted", style:"font-weight:600"}, `${p.ramo||""} · ${p.numero}`)))));
 
-  const secPaciente = el("div",{class:"card"}, el("h2",null,"2. ¿Quién recibió el servicio?"),
+  const secPaciente = el("div",{class:"card"}, el("h2",{class:"sec","data-t":"¿Quién recibió el servicio?"},"¿Quién recibió el servicio?"),
     el("div",{class:"opts"}, S.asegurados.map(a=>el("div",{class:"opt"+(B.pacienteId===a.id?" on":""), onclick:()=>{B.pacienteId=a.id; re();}},
-      el("div",null,a.nombre), el("div",{class:"muted", style:"font-weight:600"},a.parentesco)))),
+      el("div",null,nombrePropio(a.nombre)), el("div",{class:"muted", style:"font-weight:600"},a.parentesco)))),
     el("button",{class:"link", onclick:()=>pantallaAsegurados(false)},"＋ Agregar otra persona"));
 
-  const secOrigen = el("div",{class:"card"}, el("h2",null,"3. ¿Dónde fue el servicio?"),
+  const secOrigen = el("div",{class:"card"}, el("h2",{class:"sec","data-t":"¿Dónde fue el servicio?"},"¿Dónde fue el servicio?"),
     el("div",{class:"opts"}, ["Local","Extranjero"].map(o=>el("div",{class:"opt"+(B.origen===o?" on":""), onclick:()=>{B.origen=o; re();}}, o==="Local"?"En el país":"En el extranjero"))));
 
   // procedimientos
@@ -422,13 +476,13 @@ function pantallaNuevo(){
     return el("div",{class:"proc"},
       el("div",{class:"proc-h"},
         el("div",null, el("div",{class:"proc-t"}, p.tipo), el("div",{class:"proc-d"}, `${fmtFecha(p.fecha)} · ${fmtMonto(p.monto,p.moneda)}`),
-          el("div",{class:"proc-d"}, `${p.recibos.length} recibo(s) · ${p.indicaciones.length} ${p.tipo==="Medicamentos"?"receta(s)":"indicación(es)"}`)),
+          el("div",{class:"proc-d"}, `${p.recibos.length} recibo(s)${p.indicaciones.length?` · ${p.indicaciones.length} documento(s) adicional(es)`:""}`)),
         el("button",{class:"link", style:"color:#dc2626", onclick:()=>{ if(confirm("¿Quitar este procedimiento?")){ B.procs.splice(i,1); re(); } }},"Quitar")),
       plazo && dias !== null && dias > plazo - 15 && dias <= plazo ? el("div",{class:"aviso warn"},`Quedan ${plazo-dias} días para reclamar este servicio.`) : null
     );
   });
-  const secProcs = el("div",{class:"card"}, el("h2",null,"4. Servicios a reclamar"),
-    el("p",{class:"muted"},"Agregue cada servicio con su recibo y su indicación médica."),
+  const secProcs = el("div",{class:"card"}, el("h2",{class:"sec","data-t":"Servicios a reclamar"},"Servicios a reclamar"),
+    el("p",{class:"muted"},"Agregue cada servicio con su recibo de pago. Le indicaremos si hace falta algún otro documento."),
     listaProcs,
     el("button",{class:"btn sec", onclick:()=>{
       if(B.poliza===null || !B.origen){ alert("Primero elija la póliza y dónde fue el servicio."); return; }
@@ -454,7 +508,7 @@ function pantallaNuevo(){
   const monCuenta = registrada ? null : (P.monedaCuenta==="Dólares"?"USD":"DOP");
   const avisoTasa = P.forma==="Deposito" && monCuenta && monedasProcs.some(m=>m!==monCuenta)
     ? el("div",{class:"aviso info"},"Su reembolso se depositará en la moneda de su cuenta, a la tasa del día de pago.") : null;
-  const secPago = el("div",{class:"card"}, el("h2",null,"5. ¿Cómo quiere recibir el reembolso?"),
+  const secPago = el("div",{class:"card"}, el("h2",{class:"sec","data-t":"¿Cómo quiere recibir el reembolso?"},"¿Cómo quiere recibir el reembolso?"),
     el("div",{class:"opts"},
       el("div",{class:"opt"+(P.forma==="Deposito"?" on":""), onclick:()=>{P.forma="Deposito"; re();}}, registrada ? "Depósito a mi cuenta registrada" : "Depósito a mi cuenta"),
       el("div",{class:"opt"+(P.forma==="Cheque"?" on":""), onclick:()=>{P.forma="Cheque"; re();}}, "Cheque")),
@@ -471,11 +525,13 @@ function pantallaNuevo(){
     pols.length > 1 || pols.length === 0 ? secPoliza : null,
     pols.length === 1 ? el("div",{class:"aviso info", style:"margin-bottom:14px"},`Póliza: ${pols[0].aseguradora} · ${pols[0].numero}`) : null,
     secPaciente, secOrigen, secProcs, secPago,
-    el("div",{class:"card"}, el("h2",null,"6. Comentario"), coment),
+    el("div",{class:"card"}, el("h2",{class:"sec","data-t":"Comentario (opcional)"},"Comentario (opcional)"), coment),
     msg, btnEnviar
   );
+  numerarSecciones();
 }
 let _scroll = 0;
+function numerarSecciones(){ let n=0; $app.querySelectorAll(".card > h2.sec").forEach(h=>{ n++; h.textContent = n+". "+h.dataset.t; }); }
 function pantallaNuevoMantener(){ _scroll = window.scrollY; pantallaNuevo(); window.scrollTo(0,_scroll); }
 
 function pantallaProcedimiento(){
@@ -519,28 +575,41 @@ function pantallaProcedimiento(){
     pintarZ();
     return el("div",null, el("label",{class:"l"},etiqueta), cont);
   };
+  const guia = el("div");
   const zonaInd = el("div");
-  const pintarInd = () => zonaInd.replaceChildren(zonaArch(p.indicaciones, tipo.value==="Medicamentos" ? "Receta médica" : "Indicación médica"));
+  const pintarInd = () => {
+    const extra = tipo.value ? DOC_EXTRA[tipo.value] : undefined;
+    guia.replaceChildren();
+    if(tipo.value){
+      guia.appendChild(el("div",{class:"aviso info"}, extra
+        ? `📄 Para ${tipo.value.toLowerCase()}, por favor cargue su recibo de pago y su ${extra.toLowerCase()}.`
+        : `📄 Para ${tipo.value.toLowerCase()}, solo necesitamos su recibo de pago.`));
+    }
+    p.etiquetaDoc = extra || "Otro";
+    zonaInd.replaceChildren(zonaArch(p.indicaciones, extra ? extra : "Otro documento (opcional)"));
+  };
   tipo.addEventListener("change", pintarInd); pintarInd();
   const msg = el("div");
   pintar(
     el("button",{class:"link", onclick:()=>pantallaNuevo()},"‹ Volver al reclamo"),
     el("h1",null,"Agregar servicio"),
     el("div",{class:"card"},
-      el("label",{class:"l"},"Tipo de servicio"), tipo,
+      el("label",{class:"l"},"Tipo de servicio"), tipo, guia,
       el("label",{class:"l"},"Fecha del servicio"), fecha, avisoPlazo,
       el("label",{class:"l"},"Moneda que aparece en el recibo"), monSel,
       el("label",{class:"l"},"Monto a reclamar"), monto,
-      zonaArch(p.recibos, "Recibo de pago"),
+      zonaArch(p.recibos, "Recibo de pago (obligatorio)"),
       zonaInd,
       msg,
       el("button",{class:"btn", onclick:()=>{
         const m = parseFloat(String(monto.value).replace(/[^\d.]/g,""));
         const err = !tipo.value ? "Elija el tipo de servicio." : !fecha.value ? "Ponga la fecha del servicio." : diasDesde(fecha.value) < 0 ? "La fecha no puede ser futura." :
-          !(m > 0) ? "Escriba el monto." : p.recibos.length===0 ? "Agregue la foto del recibo de pago." : p.indicaciones.length===0 ? `Agregue la ${tipo.value==="Medicamentos"?"receta":"indicación"} médica.` : null;
+          !(m > 0) ? "Escriba el monto." : p.recibos.length===0 ? "Agregue la foto de su recibo de pago." : null;
         const plazo = plazoDe(poliza, B.origen);
         if(!err && plazo && diasDesde(fecha.value) > plazo){ msg.replaceChildren(el("div",{class:"aviso bad"},"Este servicio pasó el plazo de la aseguradora. Consulte a GEHCH antes de enviarlo.")); return; }
-        if(err){ msg.replaceChildren(el("div",{class:"aviso warn"},err)); return; }
+        if(err){ msg.replaceChildren(el("div",{class:"aviso bad"},"⚠️ "+err)); msg.scrollIntoView({behavior:"smooth",block:"center"}); return; }
+        const extra = DOC_EXTRA[tipo.value];
+        if(extra && p.indicaciones.length===0 && !confirm(`No agregó la ${extra.toLowerCase()}.\n\n¿Desea continuar sin ella? Si su aseguradora la requiere, GEHCH se la solicitará luego.`)) return;
         p.tipo = tipo.value; p.fecha = fecha.value; p.monto = Math.round(m*100)/100;
         B.procs.push(p); pantallaNuevo();
       }},"Agregar al reclamo")
@@ -549,6 +618,15 @@ function pantallaProcedimiento(){
 }
 
 // ═══ ENVÍO ═══════════════════════════════════════════════════════════════════
+function conTiempo(promesa, seg, que){
+  return Promise.race([promesa, new Promise((_,mal)=>setTimeout(()=>{ const e=new Error("tiempo"); e.code="tiempo-agotado"; e.que=que; mal(e); }, seg*1000))]);
+}
+function velo(titulo){
+  const t = el("div",{class:"muted"},"Preparando…"); const barra = el("i",{style:"width:0%"});
+  const v = el("div",{class:"velo"}, el("div",{class:"caja"}, el("b",null,titulo), el("div",{class:"barra"},barra), el("div",{style:"margin-top:8px"},t), el("div",{class:"muted",style:"margin-top:10px;font-size:12px"},"No cierre esta pantalla.")));
+  document.body.appendChild(v);
+  return { texto:(x)=>{t.textContent=x;}, pct:(n)=>{barra.style.width=n+"%";}, cerrar:()=>v.remove() };
+}
 function trozos(data){ const t=[]; for(let i=0;i<data.length;i+=MAX_CHARS) t.push(data.slice(i,i+MAX_CHARS)); return t; }
 
 async function subirArchivos(refRec, archivos, marcados, progreso){
@@ -560,9 +638,9 @@ async function subirArchivos(refRec, archivos, marcados, progreso){
     const ref = refRec.collection("archivos").doc(a.fid);
     for(let i=1;i<partes.length;i++){
       const k = a.fid+"#"+i;
-      if(!marcados[k]){ await ref.collection("partes").doc(String(i)).set({ data: partes[i] }); marcados[k]=true; }
+      if(!marcados[k]){ await conTiempo(ref.collection("partes").doc(String(i)).set({ data: partes[i] }), 120, "documento"); marcados[k]=true; }
     }
-    await ref.set({ procIdx:a.procIdx, tipoDoc:a.tipoDoc, nombre:a.nombre, mime:a.mime, partes:partes.length, data:partes[0], creado: Date.now() });
+    await conTiempo(ref.set({ procIdx:a.procIdx, tipoDoc:a.tipoDoc, nombre:a.nombre, mime:a.mime, partes:partes.length, data:partes[0], creado: Date.now() }), 120, "documento");
     marcados[a.fid] = true; hechos++; progreso(hechos);
   }
 }
@@ -575,25 +653,25 @@ async function enviar(btn, msg){
   const err = !poliza ? "Elija la póliza." : !paciente ? "Elija quién recibió el servicio." : !B.origen ? "Indique dónde fue el servicio." :
     B.procs.length===0 ? "Agregue al menos un servicio." : !P.forma ? "Elija cómo recibir el reembolso." :
     (P.forma==="Deposito" && !registrada && (!P.banco || P.numero.replace(/\D/g,"").length < 6)) ? "Complete el banco y el número de cuenta." : null;
-  if(err){ msg.replaceChildren(el("div",{class:"aviso warn"},err)); return; }
+  if(err){ msg.replaceChildren(el("div",{class:"aviso warn"},err)); msg.scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if(!navigator.onLine){ msg.replaceChildren(el("div",{class:"aviso bad"},"No hay internet. Conéctese e intente de nuevo; no se perderá lo que llenó.")); return; }
 
   const archivos = [];
   B.procs.forEach((p,pi)=>{
     p.recibos.forEach((a,ai)=>archivos.push({fid:`p${pi+1}-recibo-${ai+1}`, procIdx:pi, tipoDoc:"Recibo", nombre:a.nombre, mime:a.mime, data:a.data}));
-    p.indicaciones.forEach((a,ai)=>archivos.push({fid:`p${pi+1}-indicacion-${ai+1}`, procIdx:pi, tipoDoc: p.tipo==="Medicamentos"?"Receta":"Indicación", nombre:a.nombre, mime:a.mime, data:a.data}));
+    p.indicaciones.forEach((a,ai)=>archivos.push({fid:`p${pi+1}-documento-${ai+1}`, procIdx:pi, tipoDoc: (p.etiquetaDoc||"Otro").split(" ")[0], nombre:a.nombre, mime:a.mime, data:a.data}));
   });
-  btn.disabled = true;
-  const barra = el("i",{style:"width:0%"});
-  const texto = el("div",{class:"muted", style:"margin-top:6px"},"Preparando…");
-  msg.replaceChildren(el("div",{class:"barra"},barra), texto);
+  btn.disabled = true; msg.replaceChildren();
+  const V = velo("Enviando su reclamo");
+  const barra = { style:{ set width(w){ V.pct(parseInt(w)); } } };
+  const texto = { set textContent(x){ V.texto(x); } };
   const refRec = refCli().collection("reclamos").doc(B.id);
   try {
     await subirArchivos(refRec, archivos, B.subidos, (n)=>{ barra.style.width = Math.round(n/(archivos.length+1)*100)+"%"; texto.textContent = `Subiendo documentos: ${n} de ${archivos.length}`; });
     texto.textContent = "Registrando reclamo…";
     const pago = { forma:P.forma, cuentaRegistrada: P.forma==="Deposito" ? registrada : false };
     if(P.forma==="Deposito" && !registrada) Object.assign(pago, { banco:P.banco, tipoCuenta:P.tipoCuenta, monedaCuenta:P.monedaCuenta, numero:P.numero.trim() });
-    await refRec.set({
+    await conTiempo(refRec.set({
       crmId: S.cli.crmId || "", clienteNombre: S.cli.nombre || "",
       poliza: { numero:poliza.numero, aseguradora:poliza.aseguradora, ramo:poliza.ramo||"" },
       paciente: { id:paciente.id, nombre:paciente.nombre, parentesco:paciente.parentesco, validado:!!paciente.validado },
@@ -602,26 +680,51 @@ async function enviar(btn, msg){
       pago, comentario: B.comentario.trim(), numArchivos: archivos.length,
       consentimiento: { version: VERSION_CONSENTIMIENTO, fecha: (lsGet("gehch_consent_"+VERSION_CONSENTIMIENTO)||{}).fecha || Date.now() },
       estado: "Recibido", notaAdmin: "", creadoMs: Date.now(), creado: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    }), 60, "reclamo");
     barra.style.width = "100%"; nubeOk();
+    V.cerrar();
     const id = B.id; S.borrador = null;
+    avisarGEHCH({ id, cliente:S.cli.nombre||"", paciente:paciente.nombre, aseguradora:poliza.aseguradora,
+      servicios:B.procs.map(p=>p.tipo).join(", "), total:Object.entries(B.procs.reduce((t,p)=>{t[p.moneda]=(t[p.moneda]||0)+p.monto;return t;},{})).map(([m,v])=>fmtMonto(v,m)).join(" + ") });
     await cargarTodo().catch(()=>{});
     pantallaEnviado(id, paciente.nombre);
   } catch(e){
-    console.warn(e); nubeMal(); btn.disabled = false;
-    msg.replaceChildren(el("div",{class:"aviso bad"},"No se pudo terminar el envío. Revise su internet y pulse \"Enviar reclamo\" otra vez: lo ya subido no se repite."));
+    console.warn(e); V.cerrar(); btn.disabled = false;
+    const cod = (e && e.code) || "desconocido";
+    if(cod!=="permission-denied") nubeMal();
+    msg.replaceChildren(el("div",{class:"aviso bad"},
+      cod==="tiempo-agotado" ? "La conexión está muy lenta. Pulse \"Enviar reclamo\" otra vez: lo ya subido no se repite." :
+      cod==="permission-denied" ? "El sistema rechazó el envío. Por favor, avise a GEHCH por WhatsApp." :
+      "No se pudo terminar el envío. Revise su internet y pulse \"Enviar reclamo\" otra vez: lo ya subido no se repite.",
+      el("div",{style:"font-size:11px;opacity:.7;margin-top:4px"},"Código: "+cod+(e&&e.que?" · "+e.que:""))));
+    msg.scrollIntoView({behavior:"smooth",block:"center"});
   }
 }
 
+// Aviso automático (no detiene al cliente si falla)
+function avisarGEHCH(d){
+  try {
+    if(AVISO_NTFY) fetch("https://ntfy.sh/"+AVISO_NTFY, { method:"POST",
+      headers:{ "Title":"Nuevo reclamo "+d.id, "Tags":"inbox_tray", "Priority":"high", "Click":CRM_URL },
+      body:`${d.cliente} · ${d.aseguradora}\nPaciente: ${d.paciente}` }).catch(()=>{});
+  } catch(e){}
+  try {
+    if(AVISO_EMAILJS && AVISO_EMAILJS.service_id) fetch("https://api.emailjs.com/api/v1.0/email/send", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ service_id:AVISO_EMAILJS.service_id, template_id:AVISO_EMAILJS.template_id, user_id:AVISO_EMAILJS.public_key,
+        template_params:{ reclamo:d.id, cliente:d.cliente, paciente:d.paciente, aseguradora:d.aseguradora, servicios:d.servicios, total:d.total,
+          fecha:new Date().toLocaleString("es-DO",{day:"numeric",month:"long",year:"numeric",hour:"numeric",minute:"2-digit"}), enlace_crm:CRM_URL } }) }).catch(()=>{});
+  } catch(e){}
+}
+
 function pantallaEnviado(id, paciente){
-  const wa = WHATSAPP_GEHCH ? "https://wa.me/"+WHATSAPP_GEHCH+"?text="+encodeURIComponent(`Hola, envié el reclamo ${id} de ${paciente} por el portal de reembolsos.`) : null;
+  const wa = WHATSAPP_GEHCH ? "https://wa.me/"+WHATSAPP_GEHCH+"?text="+encodeURIComponent(`Hola, tengo una pregunta sobre mi reclamo ${id}.`) : null;
   pintar(
     el("div",{class:"card center"},
       el("div",{class:"big-ok"},"✅"),
       el("h1",null,"Reclamo enviado"),
-      el("p",{class:"sub"},`Número ${id}. GEHCH lo revisará y lo someterá a su aseguradora. Puede ver el estado en "Mis reclamos".`),
-      wa ? el("a",{class:"btn wa", href:wa, target:"_blank", rel:"noopener", style:"text-decoration:none"},"Avisar a GEHCH por WhatsApp (opcional)") : null,
-      el("button",{class:"btn sec", onclick:()=>pantallaInicio()},"Volver al inicio"))
+      el("p",{class:"sub"},`Número ${id}. Ya fue recibido por GEHCH: lo revisaremos y lo tramitaremos con su aseguradora. Puede seguir su estado en "Mis reclamos".`),
+      el("button",{class:"btn", onclick:()=>pantallaInicio()},"Volver al inicio"),
+      wa ? el("p",{class:"muted", style:"margin-top:14px"},"¿Tiene alguna pregunta? ", el("a",{href:wa, target:"_blank", rel:"noopener", style:"color:#2563eb;font-weight:700"},"Escríbanos por WhatsApp")) : null)
   );
 }
 
@@ -652,8 +755,8 @@ function pantallaDetalle(r){
   pintar(
     el("button",{class:"link", onclick:()=>pantallaInicio()},"‹ Volver"),
     el("h1",null,`Reclamo ${r.id}`),
-    el("div",{style:"margin-bottom:14px"}, chipEstado(r.estado)),
-    r.notaAdmin ? el("div",{class:"aviso "+(r.estado==="Rechazado"?"bad":r.estado==="Pagado"?"ok":"warn"), style:"margin-bottom:14px"}, el("b",null,"Mensaje de GEHCH: "), r.notaAdmin) : null,
+    el("div",{style:"margin-bottom:14px"}, chipEstado(etiquetaEstado(r))),
+    r.notaAdmin ? el("div",{class:"aviso "+(r.estado==="Rechazado"?"bad":r.estado==="Pagado"?"ok":"warn"), style:"margin-bottom:14px"}, el("b",null, r.estado==="Documentos adicionales" ? (r.origenDocs==="aseguradora" ? `${r.poliza?.aseguradora||"Su aseguradora"} solicita: ` : "Falta lo siguiente: ") : "Mensaje de GEHCH: "), r.notaAdmin.split(/\n/).filter(Boolean).join(" · ")) : null,
     puedeAdjuntar ? el("div",{class:"card"}, el("h2",null,"Enviar documentos solicitados"), zona, msg, btn) : null,
     r.estado==="Documentos adicionales" && r.adicionalesEnviados ? el("div",{class:"aviso ok", style:"margin-bottom:14px"},"Documentos enviados. GEHCH los revisará.") : null,
     el("div",{class:"card"},
@@ -665,6 +768,15 @@ function pantallaDetalle(r){
     )
   );
 }
+
+// Al volver a la pestaña (o cada 5 min), refrescar familia y reclamos si no hay un reclamo a medio llenar
+let _ultimaCarga = Date.now();
+async function refrescarSiHaceFalta(){
+  if(!S.key || S.borrador || document.visibilityState!=="visible" || Date.now()-_ultimaCarga < 60000) return;
+  try { await cargarTodo(); _ultimaCarga = Date.now(); if($app.querySelector("h1") && /^Hola/.test($app.querySelector("h1").textContent)) pantallaInicio(); } catch(e){}
+}
+document.addEventListener("visibilitychange", refrescarSiHaceFalta);
+setInterval(refrescarSiHaceFalta, 5*60000);
 
 // ═══ ARRANQUE ════════════════════════════════════════════════════════════════
 (async function iniciar(){
