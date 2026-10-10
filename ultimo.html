@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex, nofollow"/><title>CRM GEHCH</title>
+<style>body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}a{color:#93c5fd}</style>
+</head><body><div id="m">Abriendo la versión más reciente del CRM…</div>
+<script>
+// Abre siempre la versión más nueva del CRM (CRM-GEHCH_<número>.html) publicada en este repositorio
+(async function(){
+  var respaldo = "CRM-GEHCH_85.html";
+  try {
+    var r = await fetch("https://api.github.com/repos/gherrerach14-dev/gehch-crm/contents/", {cache:"no-store"});
+    if(!r.ok) throw new Error(r.status);
+    var lista = await r.json(), mejor = null, num = -1;
+    lista.forEach(function(f){ var m = /^CRM-GEHCH_(\d+)\.html$/.exec(f.name); if(m && Number(m[1]) > num){ num = Number(m[1]); mejor = f.name; } });
+    location.replace(mejor || respaldo);
+  } catch(e){
+    document.getElementById("m").innerHTML = 'No se pudo comprobar la última versión. <a href="'+respaldo+'">Abrir el CRM</a>';
+    setTimeout(function(){ location.replace(respaldo); }, 2500);
+  }
+})();
+</script></body></html>
