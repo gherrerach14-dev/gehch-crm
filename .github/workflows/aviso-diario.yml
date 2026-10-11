@@ -1,0 +1,23 @@
+name: Aviso diario GEHCH
+on:
+  schedule:
+    - cron: "55 11 * * *"   # 7:55 a. m. en RD (UTC-4); GitHub suele tardar unos minutos, llega cerca de las 8:00
+  workflow_dispatch:         # botón "Run workflow" para probarlo a mano
+jobs:
+  aviso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar Firebase
+        run: npm install --no-save --no-package-lock firebase-admin@12.7.0
+        working-directory: aviso
+      - name: Enviar aviso
+        run: node aviso-diario.js
+        working-directory: aviso
+        env:
+          FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
+          FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
