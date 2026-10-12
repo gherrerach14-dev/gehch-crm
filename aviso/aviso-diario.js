@@ -51,8 +51,17 @@ function gehchAgenda(D, hoyISO){
   let vencN = 0; const vencT = {};
   (D.planes||[]).forEach(cu=>{
     if(cu.estado==="Pagado") return; const p=poliza(cu.polizaId); if(!vigente(p)) return; const d=dias(cu.fecha); if(d===null) return;
-    if(d===5||d===0) L.cuo.push({k:`cuo:${cu.id}:${cu.fecha}:${d}`, cid:p.clienteId, t:`${d===0?"Vence hoy":"En 5 días"}: ${nomC(cliente(p.clienteId))} · ${p.numero} · cuota ${cu.numero}/${cu.total} · ${mon(cu.monto,p.moneda)}`});
+    if(d===5||d===0) L.cuo.push({k:`cuo:${cu.id}:${cu.fecha}:${d}`, cid:p.clienteId, t:`${d===0?"Vence hoy":"En 5 días"}: ${nomC(cliente(p.clienteId))} · ${p.numero} · ${cu.facturaNumero?`factura ${cu.facturaNumero} pago ${cu.numero}/${cu.total}`:`cuota ${cu.numero}/${cu.total}`} · ${mon(cu.monto,p.moneda)}`});
     else if(d<0){ vencN++; vencT[p.moneda]=(vencT[p.moneda]||0)+Number(cu.monto||0); }
+  });
+  // 🧾 Pólizas declarativas: toca declarar cuando pasa el período sin factura nueva
+  const masMeses = (iso,n) => { const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||"")); if(!m) return null; const t=new Date(Date.UTC(+m[1],+m[2]-1+n,1)); const dim=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+1,0)).getUTCDate(); return t.getUTCFullYear()+"-"+String(t.getUTCMonth()+1).padStart(2,"0")+"-"+String(Math.min(+m[3],dim)).padStart(2,"0"); };
+  (D.polizas||[]).filter(p=>vigente(p) && p.declarativa).forEach(p=>{
+    const ult = (p.facturas||[]).map(x=>x.hasta).filter(Boolean).sort().pop();
+    const ref = ult || p.inicio; if(!ref || (p.fin && ref>=p.fin)) return;
+    let esp = masMeses(ref, Number(p.periodoDecl||3)); if(!esp) return; if(p.fin && esp>p.fin) esp = p.fin;
+    const d = dias(esp); if(d===null || d>0) return;
+    L.cuo.push({k:`decl:${p.id}:${esp}`, cid:p.clienteId, t:`Declaración pendiente: ${nomC(cliente(p.clienteId))} · ${p.numero} · ${ult?"última hasta "+f(ult):"sin facturas registradas"} (declara cada ${p.periodoDecl||3} meses)`});
   });
   if(vencN) L.cuo.push({k:`cuo:vencidas:${vencN}`, t:`Cuotas vencidas sin pagar: ${vencN} (${Object.entries(vencT).map(([m,v])=>mon(v,m)).join(" + ")})`});
 
