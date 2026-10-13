@@ -79,7 +79,8 @@ function gehchAgenda(D, hoyISO){
     if(!cerrado) enTramite++;
     if(r.estado==="Recibido" && !r.visto) port.push({k:`rc:${r.key||""}/${r.id}:nuevo`, t:`NUEVO ${r.id}: ${quien}`});
     if(r.estado==="Documentos adicionales" && r.adicionalesEnviados && !r.adicionalesVistos) port.push({k:`rc:${r.key||""}/${r.id}:docs:${r.adicionalesEnviados}`, t:`Documentos recibidos ${r.id}: ${quien}`});
-    if(!cerrado){ const pl=(PLAZOS[r.poliza&&r.poliza.aseguradora]||{})[r.origen]; if(pl){ const ds=(r.procedimientos||[]).map(x=>dias(x.fecha)).filter(x=>x!==null).map(x=>pl+x); if(ds.length){ const m=Math.min(...ds); if(m<=15) port.push({k:`rc:${r.key||""}/${r.id}:plazo:${m<0?"vencido":m<=5?"5":"15"}`, t:`Plazo ${m<0?"VENCIDO":"de "+m+" días"} ${r.id}: ${quien}`}); } } }
+    if(r.estado==="Aprobado"){ const hist=(r.historial||[]).filter(h=>h.estado==="Aprobado").map(h=>h.fecha); const ms=r.aprobadoMs||(hist.length?Math.max(...hist):null); if(ms){ const iso=new Date(ms-4*3600000).toISOString().slice(0,10); const dd=dias(iso); if(dd!==null && dd<=-2) port.push({k:`rc:${r.key||""}/${r.id}:aprobado`, t:`Aprobado hace ${-dd} días sin confirmar el pago ${r.id}: ${quien}`}); } }
+    if(!cerrado && r.estado!=="Aprobado"){ const pl=(PLAZOS[r.poliza&&r.poliza.aseguradora]||{})[r.origen]; if(pl){ const ds=(r.procedimientos||[]).map(x=>dias(x.fecha)).filter(x=>x!==null).map(x=>pl+x); if(ds.length){ const m=Math.min(...ds); if(m<=15) port.push({k:`rc:${r.key||""}/${r.id}:plazo:${m<0?"vencido":m<=5?"5":"15"}`, t:`Plazo ${m<0?"VENCIDO":"de "+m+" días"} ${r.id}: ${quien}`}); } } }
     if(r.estado!=="Recibido" && r.avisoEstado!==ui) port.push({k:`rc:${r.key||""}/${r.id}:aviso:${ui}`, t:`Sin notificar al cliente (${ui}) ${r.id}: ${quien}`});
   });
   if(enTramite) port.push({k:`rc:tramite:${enTramite}`, t:`Reembolsos en trámite: ${enTramite}`});
