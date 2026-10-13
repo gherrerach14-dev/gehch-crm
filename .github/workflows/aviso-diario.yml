@@ -1,7 +1,13 @@
 name: Aviso diario GEHCH
 on:
   schedule:
-    - cron: "55 11 * * *"   # 7:55 a. m. en RD (UTC-4); GitHub suele tardar unos minutos, llega cerca de las 8:00
+    # GitHub no garantiza la hora de las tareas programadas: se hacen 5 intentos (hora de RD = UTC-4)
+    # y solo el primero que corre envía el aviso; los demás ven que ya salió y no envían nada.
+    - cron: "13 10 * * *"   # 6:13 a. m.
+    - cron: "43 10 * * *"   # 6:43 a. m.
+    - cron: "13 11 * * *"   # 7:13 a. m.
+    - cron: "43 11 * * *"   # 7:43 a. m.
+    - cron: "13 12 * * *"   # 8:13 a. m.
   workflow_dispatch:         # botón "Run workflow" para probarlo a mano
 jobs:
   aviso:
@@ -21,3 +27,4 @@ jobs:
         env:
           FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
           FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
+          EVENTO: ${{ github.event_name }}
