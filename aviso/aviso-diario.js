@@ -104,7 +104,7 @@ function gehchAgenda(D, hoyISO){
   return { secciones:S, texto, total:S.reduce((a,s)=>a+s.items.length,0), fecha:hoyISO };
 }
 
-// ── Envío automático (GitHub Actions, todos los días a las 8:00 a. m. de RD) ──
+// ── Envío automático (GitHub Actions: varios intentos cada mañana, se envía un solo aviso por día) ──
 // Lee los datos del CRM (proyecto crm-gehch) y de los reembolsos (proyecto gehch-reclamos) con llaves
 // guardadas como secretos de GitHub, arma la agenda del día y la manda al canal privado de ntfy.
 // No imprime datos de clientes en el registro de GitHub: solo cantidades.
@@ -130,11 +130,20 @@ async function main(){
   // Fecha de hoy en República Dominicana (UTC-4, sin horario de verano)
   const rd = new Date(Date.now() - 4*3600*1000);
   const hoy = rd.toISOString().slice(0,10);
+  // Un solo aviso por día: GitHub corre varios intentos cada mañana; el primero que llega envía y los demás no.
+  // (Si se corre a mano con "Run workflow", envía siempre.)
+  const marca = db.collection("gehch").doc("avisoDiario");
+  const manual = process.env.EVENTO === "workflow_dispatch";
+  if(!manual){
+    const tomado = await db.runTransaction(async t=>{ const s=await t.get(marca); if(s.exists && s.data().fecha===hoy) return false; t.set(marca,{ fecha:hoy, estado:"enviando", hora:new Date().toISOString() }); return true; });
+    if(!tomado){ console.log(`El aviso de hoy (${hoy}) ya se había enviado. Este intento no envía nada.`); return; }
+  }
   const ag = gehchAgenda(D, hoy);
   const r = await fetch("https://ntfy.sh/", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({
     topic: tema, title: `GEHCH · Agenda del ${hoy.split("-").reverse().join("/")}${ag.total?` (${ag.total})`:""}`,
     message: ag.texto, tags:["calendar"], click: "https://gherrerach14-dev.github.io/gehch-crm/ultimo.html" }) });
-  if(!r.ok) throw new Error("ntfy respondió "+r.status);
+  if(!r.ok){ if(!manual) await marca.set({ fecha:"", estado:"falló", hora:new Date().toISOString() }); throw new Error("ntfy respondió "+r.status); }
+  await marca.set({ fecha:hoy, estado:"enviado", hora:new Date().toISOString(), manual });
   // Recordatorios de hoy con hora: aviso a esa hora exacta (los creados en el celular ya lo traen programado)
   let programados = 0;
   for(const x of (D.recordatorios||[])){
