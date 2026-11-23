@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 4;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 5;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -54,7 +54,12 @@ async function esperarOpciones(page, sel, ms = 20000) {
   while (Date.now() < fin) { const o = await opcionesDe(page, sel); if (o.length) return o; await page.waitForTimeout(400); }
   return [];
 }
-async function elegir(page, sel, valor) { await page.selectOption(sel, valor); await page.dispatchEvent(sel, "change"); await page.waitForTimeout(700); }
+const NOMBRES = { "#policy-affected": "Póliza", "#original-location-list": "Origen", "#customer-affected": "Paciente", "#medical-treatment-list": "Procedimiento", "#pay-method-list": "Forma de pago", "#bank-list": "Banco", "#registered-accounts": "Número de cuenta", "#account-type-list": "Tipo de cuenta", "#currency-type-list": "Moneda de la cuenta" };
+async function elegir(page, sel, valor) {
+  try { await page.selectOption(sel, valor, { timeout: 8000 }); }
+  catch (e) { const bloq = await page.$eval(sel, el => el.disabled).catch(() => null); throw new Error(`no pude elegir en «${NOMBRES[sel] || sel}»${bloq ? " (el campo está bloqueado)" : ""}`); }
+  await page.dispatchEvent(sel, "change"); await page.waitForTimeout(700);
+}
 
 // Documentos del reclamo (el portal los guarda en trozos de texto base64)
 async function archivosDe(ref) {
@@ -82,7 +87,7 @@ async function diagnostico(page) {
   const foto = await page.screenshot({ fullPage: true }).catch(() => null);
   const estado = await page.evaluate(() => {
     const q = (s) => document.querySelector(s); const v = (s) => q(s) ? `${q(s).disabled ? "🔒" : "✏️"}${q(s).value ? "=" + String(q(s).value).slice(0, 25) : ""}` : "—";
-    return `Campos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}`;
+    return `Campos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")} · cuenta ${v("#registered-accounts")} · otra ${q("#other-account") ? (q("#other-account").checked ? "☑" : "☐") : "—"}\nBancos: ${q("#bank-list") ? [...q("#bank-list").options].map(o => o.text.trim()).slice(0, 12).join(", ") : "—"}\nCuentas guardadas: ${q("#registered-accounts") ? [...q("#registered-accounts").options].map(o => (o.text.trim() || "(vacía)").replace(/\d(?=\d{4})/g, "•")).join(", ") || "ninguna" : "—"}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}`;
   }).catch(() => "");
   return { foto, estado };
 }
@@ -165,11 +170,23 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
       if (!bancos.length) throw new Alto("Reservas no cargó la lista de bancos");
       if (P.cuentaRegistrada) {
         // Cuenta ya registrada en Reservas: se busca banco por banco; si hay más de una cuenta, no se adivina
-        const halladas = [];
-        for (const b of bancos) { await elegir(page, "#bank-list", b.v); const cs = await opcionesDe(page, "#registered-accounts"); cs.forEach(c => halladas.push({ b, c })); }
-        if (!halladas.length) throw new Alto("el cliente marcó «cuenta registrada», pero Reservas no muestra ninguna cuenta guardada para el titular");
-        if (halladas.length > 1) throw new Alto(`el titular tiene ${halladas.length} cuentas registradas en Reservas; elija una a mano`);
-        await elegir(page, "#bank-list", halladas[0].b.v); await elegir(page, "#registered-accounts", halladas[0].c.v);
+        // Al elegir el banco, Reservas trae sola la cuenta guardada de ese banco. Se prueba banco por banco
+        // (primero Banco de Reservas, el más común) hasta encontrar la cuenta; con más de una cuenta no se adivina.
+        const orden = [...bancos].sort((a, b) => (/reservas/i.test(b.t) ? 1 : 0) - (/reservas/i.test(a.t) ? 1 : 0));
+        let hallada = null;
+        for (const b of orden) {
+          await elegir(page, "#bank-list", b.v);
+          const cs = await esperarOpciones(page, "#registered-accounts", 4000);
+          if (!cs.length) continue;
+          if (cs.length > 1) throw new Alto(`el titular tiene ${cs.length} cuentas registradas en ${b.t}; elija una a mano`);
+          hallada = { b, c: cs[0] }; break;
+        }
+        if (!hallada) throw new Alto("el cliente marcó «cuenta registrada», pero Reservas no muestra ninguna cuenta guardada para el titular en ningún banco");
+        // La cuenta puede quedar elegida sola (campo bloqueado) o hay que elegirla
+        await page.waitForFunction(() => { const e = document.querySelector("#registered-accounts"); return e && (!e.disabled || e.value); }, null, { timeout: 6000 }).catch(() => {});
+        const est = await page.$eval("#registered-accounts", e => ({ dis: e.disabled, val: e.value }));
+        if (!est.dis) { if (est.val !== hallada.c.v) await elegir(page, "#registered-accounts", hallada.c.v); }
+        else if (est.val !== hallada.c.v) throw new Alto(`Reservas mostró la cuenta guardada en ${hallada.b.t}, pero no la dejó elegir (campo bloqueado)`);
       } else {
         const b = elegirTexto(P.banco, bancos.map(o => o.t)) || bancos.find(o => tokens(P.banco).every(t => norm(o.t).includes(t)))?.t;
         if (!b) throw new Alto(`el banco «${P.banco}» no está en la lista de Reservas`);
