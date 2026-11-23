@@ -1,4 +1,4 @@
-// ── Agenda diaria GEHCH + motor de Cobros (copia exacta del CRM v101; misma lógica en el CRM y en el aviso de las 8:00) ──
+// ── Agenda diaria GEHCH + motor de Cobros (copia exacta del CRM v104; misma lógica en el CRM y en el aviso de las 8:00) ──
 // ── Cobros de hoy: qué toca hacer con cada cliente (misma lógica en el CRM y en el aviso de las 8:00) ──
 // Los clientes pagan directo a la aseguradora; GEHCH da seguimiento. Gracia por aseguradora (config.cobros.gracia, 30 días por defecto).
 const COB_ETAPAS = {
@@ -88,8 +88,9 @@ function gehchCobrosHoy(D, hoyISO){
   const conc = (D.config&&D.config.conciliaciones) || {};
   const nPorAseg = {}; Object.values(C).forEach(g=>g.cuotas.forEach(x=>{ const a=x.p.aseguradora; if(a) nPorAseg[a]=(nPorAseg[a]||0)+1; }));
   const asegs = Object.keys(nPorAseg).filter(a=>nPorAseg[a]>=3); // solo aseguradoras con cartera pendiente relevante
-  const conciliar = asegs.map(a=>{ const r=conc[a]; const ult=r&&(r.cargado||r.fechaCorte)||""; const dd=ult?-dias(ult):null; return { aseg:a, ultima:ult, dias:dd }; })
-    .filter(x=>x.dias===null || x.dias>30).sort((a,b)=>(b.dias===null?9999:b.dias)-(a.dias===null?9999:a.dias));
+  const concDias = ((D.config&&D.config.cobros)||{}).concDias || {}; const concDef = { "Seguros Reservas":15 };
+  const conciliar = asegs.map(a=>{ const r=conc[a]; const ult=r&&(r.fechaCorte||r.cargado)||""; const dd=ult?-dias(ult):null; const cada=Number(concDias[a])||concDef[a]||30; return { aseg:a, ultima:ult, dias:dd, cada }; })
+    .filter(x=>x.dias===null || x.dias>=x.cada).sort((a,b)=>(b.dias===null?9999:b.dias)-(a.dias===null?9999:a.dias));
   return { acciones, conciliar, perfiles: Object.fromEntries(Object.values(C).map(g=>[String(g.cid), perfilDe(g.cid,g.maxVenc)])) };
 }
 // Indicadores de cobranza (mes en curso y últimos 90 días). Montos en RD$ (US$ × tasa de config.cobros.tasa, 60 por defecto) solo para los %.
@@ -152,7 +153,7 @@ function gehchCobrosInforme(D, hoyISO){
     `Recuperación de vencidas: ${k.recuperacion===null?"—":k.recuperacion+"%"} · promesas cumplidas ${k.promesas.pct===null?"—":k.promesas.pct+"% ("+k.promesas.cumplidas+"/"+k.promesas.total+")"}`,
     ``,
     `Acciones abiertas: ${h.acciones.length} (🚨 ${n("llamar")} llamadas · ⏳ ${n("inicial")} iniciales · 🔴 ${n("riesgo")} en riesgo · ⚠️ ${n("promesaRota")} promesas incumplidas)`,
-    h.conciliar.length ? `Conciliación pendiente: ${h.conciliar.map(c=>c.aseg).join(", ")}` : `Conciliación al día`,
+    h.conciliar.length ? `Pedir antigüedad de saldos a: ${h.conciliar.map(c=>c.aseg).join(", ")}` : `Conciliación al día`,
     ``,
     `Morosidad por aseguradora:`,
     ...k.porAseg.filter(a=>a.vencRD>0).slice(0,8).map(a=>`• ${a.aseg}: ${a.morosidad}% vencido${a.atrasoProm===null?"":" · atraso prom. "+a.atrasoProm+" días"}`)
@@ -241,9 +242,9 @@ function gehchAgenda(D, hoyISO){
   const urg = CH.acciones.filter(a=>["llamar","promesaRota","inicial"].includes(a.e));
   urg.forEach(a=>{ L.cuo.push({k:`cob:${a.cid}:${a.e}:${hoyISO}`, cid:a.cid, t:`${COB_ETAPAS[a.e].i} ${COB_ETAPAS[a.e].l}: ${nomC(a.cliente)}${a.cliente&&a.cliente.telPrincipal?" · "+a.cliente.telPrincipal:""} · ${Object.entries(a.tot).map(([m,v])=>mon(v,m)).join(" + ")}${a.limite?" · puede cancelar desde el "+f(a.limite):""}`}); });
   const resto = CH.acciones.length - urg.length;
-  if(resto) L.cuo.push({k:`cob:resto:${hoyISO}:${resto}`, t:`💬 ${resto} mensaje(s) de cobro por enviar hoy (recordatorios, vencidas, promesas) · menú Cobros → Cobros de hoy`});
-  if(CH.conciliar.length) L.cuo.push({k:`cob:conc:${CH.conciliar.map(c=>c.aseg).join(",")}:${hoyISO.slice(0,7)}`, t:`⚖️ Conciliación mensual pendiente: ${CH.conciliar.map(c=>`${c.aseg} (${c.ultima?"hace "+c.dias+" días":"nunca"})`).join(", ")}`});
-  if(new Date(base).getUTCDay()===1) L.cuo.push({k:`cob:informe:${hoyISO}`, t: gehchCobrosInforme(D, hoyISO)});
+  if(resto) L.cuo.unshift({k:`cob:resto:${hoyISO}:${resto}`, t:`💬 ${resto} mensaje(s) de cobro por enviar hoy (recordatorios, vencidas, promesas) · menú Cobros → Cobros de hoy`});
+  if(CH.conciliar.length) L.cuo.unshift({k:`cob:conc:${CH.conciliar.map(c=>c.aseg).join(",")}:${hoyISO.slice(0,7)}`, t:`⚖️ Pedir antigüedad de saldos a: ${CH.conciliar.map(c=>`${c.aseg} (${c.ultima?"último corte hace "+c.dias+" días":"nunca"})`).join(", ")}`});
+  if(new Date(base).getUTCDay()===1) L.cuo.unshift({k:`cob:informe:${hoyISO}`, t: gehchCobrosInforme(D, hoyISO)});
   // 🧾 Pólizas declarativas: toca declarar cuando pasa el período sin factura nueva
   const masMeses = (iso,n) => { const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||"")); if(!m) return null; const t=new Date(Date.UTC(+m[1],+m[2]-1+n,1)); const dim=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+1,0)).getUTCDate(); return t.getUTCFullYear()+"-"+String(t.getUTCMonth()+1).padStart(2,"0")+"-"+String(Math.min(+m[3],dim)).padStart(2,"0"); };
   (D.polizas||[]).filter(p=>vigente(p) && p.declarativa).forEach(p=>{
