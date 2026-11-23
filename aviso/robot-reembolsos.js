@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 7;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 8;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -82,19 +82,36 @@ async function archivosDe(ref) {
   return out.sort((x, y) => String(x.name).localeCompare(String(y.name)));
 }
 
+
+// Estado de los documentos en el Dropzone de Reservas (usa su API si existe; si no, las clases de la vista previa)
+const DZ_ESTADO = () => {
+  const el = [...document.querySelectorAll("*")].find(e => e.dropzone && e.dropzone.files);
+  const dz = el ? el.dropzone : (window.Dropzone && window.Dropzone.instances && window.Dropzone.instances[0]);
+  const ps = [...document.querySelectorAll(".dz-preview")];
+  if (dz) {
+    const o = dz.options || {};
+    const fs = dz.files.map(f => ({ n: f.name, st: f.status, acc: f.accepted, err: f.status === "error" ? String((f.previewElement && (f.previewElement.querySelector(".dz-error-message") || {}).innerText) || "error") : "" }));
+    return { api: true, auto: o.autoProcessQueue !== false, url: String(o.url || "").replace(/\?.*/, ""), multi: !!o.uploadMultiple, fs };
+  }
+  return { api: false, fs: ps.map(p => ({ n: ((p.querySelector(".dz-filename") || {}).innerText || "").trim(), st: p.classList.contains("dz-success") || p.classList.contains("dz-complete") ? "success" : p.classList.contains("dz-error") ? "error" : "?", acc: !p.classList.contains("dz-error"), err: p.classList.contains("dz-error") ? ((p.querySelector(".dz-error-message") || {}).innerText || "error") : "" })) };
+};
+
 // Foto y estado de los campos cuando algo falla (para corregir sin adivinar)
 async function diagnostico(page) {
   const foto = await page.screenshot({ fullPage: true }).catch(() => null);
-  const estado = await page.evaluate(() => {
+  const estado = await page.evaluate((dzSrc) => {
     const q = (s) => document.querySelector(s); const v = (s) => q(s) ? `${q(s).disabled ? "🔒" : "✏️"}${q(s).value ? "=" + String(q(s).value).slice(0, 25) : ""}` : "—";
-    const docsTxt = [...document.querySelectorAll(".dz-preview")].map(p => (p.classList.contains("dz-success") ? "✓" : p.classList.contains("dz-error") ? "✗ " + ((p.querySelector(".dz-error-message") || {}).innerText || "") : "…") + " " + ((p.querySelector(".dz-filename") || {}).innerText || "").slice(0, 25)).join(", ");
-    return `Documentos: ${docsTxt || "ninguno"} · botón Enviar ${q("#send-data") ? (q("#send-data").disabled ? "🔒" : "✅ habilitado") : "—"}\nCampos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")} · cuenta ${v("#registered-accounts")} · otra ${q("#other-account") ? (q("#other-account").checked ? "☑" : "☐") : "—"}\nBancos: ${q("#bank-list") ? [...q("#bank-list").options].map(o => o.text.trim()).slice(0, 12).join(", ") : "—"}\nCuentas guardadas: ${q("#registered-accounts") ? [...q("#registered-accounts").options].map(o => (o.text.trim() || "(vacía)").replace(/\d(?=\d{4})/g, "•")).join(", ") || "ninguna" : "—"}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}`;
-  }).catch(() => "");
+    const D = (new Function("return (" + dzSrc + ")"))()();
+    const docsTxt = D.fs.map(f => (f.st === "success" ? "✓" : D.api && !D.auto && f.st === "queued" ? "⏳ listo (se sube al Enviar)" : f.st === "error" ? "✗ " + f.err : "… [" + f.st + (f.acc === false ? ", no aceptado" : "") + "]") + " " + String(f.n).slice(0, 22)).join(", ");
+    const b = q("#send-data"); const cs = b ? getComputedStyle(b) : null;
+    const tec = `Técnico: dropzone ${D.api ? "API" : "sin API"}${D.api ? ` · sube ${D.auto ? "al cargar" : "al pulsar Enviar"} · url ${D.url || "—"}${D.multi ? " · múltiple" : ""}` : ""} · Enviar: disabled=${b ? b.disabled : "—"} clase="${b ? b.className : ""}" opacidad=${cs ? cs.opacity : "—"} fondo=${cs ? cs.backgroundColor : "—"} eventos=${cs ? cs.pointerEvents : "—"}`;
+    return `Documentos: ${docsTxt || "ninguno"} · botón Enviar ${b ? (b.disabled ? "🔒" : "✅ habilitado") : "—"}\n${tec}\nCampos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")} · cuenta ${v("#registered-accounts")} · otra ${q("#other-account") ? (q("#other-account").checked ? "☑" : "☐") : "—"}\nBancos: ${q("#bank-list") ? [...q("#bank-list").options].map(o => o.text.trim()).slice(0, 12).join(", ") : "—"}\nCuentas guardadas: ${q("#registered-accounts") ? [...q("#registered-accounts").options].map(o => (o.text.trim() || "(vacía)").replace(/\d(?=\d{4})/g, "•")).join(", ") || "ninguna" : "—"}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}${window.__redes ? "\nRed al subir: " + window.__redes : ""}`;
+  }, DZ_ESTADO.toString()).catch(e => "(diagnóstico falló: " + e.message + ")");
   return { foto, estado };
 }
 
 async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
-  const ctx = await browser.newContext({ viewport: { width: 420, height: 900 }, locale: "es-DO", timezoneId: "America/Santo_Domingo" });
+  const ctx = await browser.newContext({ bypassCSP: true, viewport: { width: 420, height: 900 }, locale: "es-DO", timezoneId: "America/Santo_Domingo" });
   const page = await ctx.newPage(); const alertas = []; page.setDefaultTimeout(15000);
   if (process.env.DEBUG) { page.on("pageerror", e => console.log("  PAGEERROR", e.message)); page.on("console", m => console.log("  CONSOLE", m.text())); }
   const t0 = Date.now(); const paso = (t) => { if (process.env.DEBUG) console.log("  ·", t, Math.round((Date.now() - t0) / 1000) + "s"); };
@@ -219,24 +236,28 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
     if (!archivos.length) throw new Alto("el reclamo no tiene documentos");
     const grande = archivos.find(a => a.buffer.length > MAX_ARCHIVO); if (grande) throw new Alto(`un documento pesa más de 5 MB (${(grande.buffer.length / 1048576).toFixed(1)} MB), el límite de Reservas`);
     const total = archivos.reduce((s, a) => s + a.buffer.length, 0); if (total > MAX_TOTAL) throw new Alto(`los documentos suman ${(total / 1048576).toFixed(1)} MB y Reservas acepta hasta 25 MB`);
+    const redes = []; const verRed = r => { if (r.method() !== "GET") redes.push(r.method() + " " + r.url().replace(/^https?:\/\/[^/]+/, "").replace(/\?.*/, "")); };
+    page.on("request", verRed);
     await page.setInputFiles("input.dz-hidden-input", archivos.map(a => ({ name: a.name, mimeType: a.mimeType, buffer: a.buffer })));
     // Cada documento se sube a Reservas al momento: hay que esperar a que quede ✓ (dz-success); si alguno da error, no se envía
-    const docs = await page.waitForFunction(n => {
-      const ps = [...document.querySelectorAll(".dz-preview")];
-      if (ps.length < n) return false;
-      const err = ps.filter(p => p.classList.contains("dz-error"));
-      if (err.length) return { ok: false, msg: err.map(p => (p.querySelector(".dz-error-message") || {}).innerText || "error").join(" · ") };
-      return ps.every(p => p.classList.contains("dz-success") || p.classList.contains("dz-complete")) ? { ok: true } : false;
-    }, archivos.length, { timeout: 90000 }).then(h => h.jsonValue()).catch(() => null);
-    paso(`documentos: ${docs ? (docs.ok ? "subidos" : "error " + docs.msg) : "sin confirmar"}`);
+    // Reservas puede subir cada documento al momento (queda ✓) o guardarlo para subirlo al pulsar Enviar: se aceptan ambos casos
+    const docs = await page.waitForFunction(([n, src]) => {
+      const D = (new Function("return (" + src + ")"))()();
+      if (D.fs.length < n) return false;
+      const err = D.fs.filter(f => f.st === "error" || f.acc === false);
+      if (err.length) return { ok: false, msg: err.map(f => f.err || "documento no aceptado").join(" · ") };
+      if (D.fs.every(f => f.st === "success")) return { ok: true, como: "subidos" };
+      if (D.api && !D.auto && D.fs.every(f => f.st === "queued" || f.st === "added")) return { ok: true, como: "listos (Reservas los sube al pulsar Enviar)" };
+      return false;
+    }, [archivos.length, DZ_ESTADO.toString()], { timeout: 90000, polling: 500 }).then(h => h.jsonValue()).catch(() => null);
+    paso(`documentos: ${docs ? (docs.ok ? docs.como : "error " + docs.msg) : "sin confirmar"}`);
     if (docs && !docs.ok) throw new Alto(`Reservas rechazó un documento: ${docs.msg}`);
-    if (!docs) {
-      const info = await page.evaluate(() => [...document.querySelectorAll(".dz-preview")].map(p => p.className.replace(/\s+/g, " ")).join(" | ")).catch(() => "");
-      if (real) throw new Alto(`los documentos no terminaron de subir a Reservas en 90 segundos (${info || "sin vista previa"}); no se envió nada`);
-    }
+    if (!docs && real) throw new Alto("Reservas no confirmó los documentos en 90 segundos; no se envió nada");
     await page.waitForTimeout(1500);
     const enviarListo = await page.$eval("#send-data", b => !b.disabled).catch(() => false);
     if (real && !enviarListo) throw new Alto("todo quedó lleno, pero Reservas no habilitó el botón «Enviar»; no se envió nada");
+    page.off("request", verRed);
+    await page.evaluate(t => { window.__redes = t; }, redes.slice(0, 6).join(" · ") || "ninguna").catch(() => {});
     const foto = await page.screenshot({ fullPage: true });
     if (!real) return { prueba: true, foto, estado: (await diagnostico(page)).estado };
     paso("enviar"); // 7. Enviar y leer el número de solicitud
