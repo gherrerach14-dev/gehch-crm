@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 8;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 9;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -325,7 +325,11 @@ async function main() {
           await ref.update({ estado: "Enviado a aseguradora", liquidacion: { numeroAseg: res.numero }, notaAdmin: nota, actualizado: ahora,
             historial: admin.firestore.FieldValue.arrayUnion({ estado: "Enviado a aseguradora", nota, fecha: ahora }), robot: { estado: "enviado", numero: res.numero, fecha: ahora } });
           const nombrePila = String(nomCli).split(" ")[0];
-          const msgCli = `Hola, ${nombrePila}. Su reclamo de reembolso fue sometido a Seguros Reservas con la solicitud No. ${res.numero} (${totTxt}). Reservas responde normalmente en 48 horas laborables; le avisamos en cuanto lo aprueben. También puede ver el estado en su portal de GEHCH.`;
+          // Plazo según Reservas: menos de RD$15,000 → 24 a 48 horas laborables; desde RD$15,000 → 5 a 7 días laborables
+          const tasaUSD = Number(config.cobros && config.cobros.tasa) || 60;
+          const enPesos = Number(totales.DOP || 0) + Number(totales.USD || 0) * tasaUSD;
+          const plazo = enPesos < 15000 ? "Reservas responde normalmente en 24 a 48 horas laborables" : "Por el monto, Reservas responde normalmente en 5 a 7 días laborables";
+          const msgCli = `Hola, ${nombrePila}. Su reclamo de reembolso fue sometido a Seguros Reservas con la solicitud No. ${res.numero} (${totTxt}). ${plazo}; le avisamos en cuanto lo aprueben. También puede ver el estado en su portal de GEHCH.`;
           await ntfy(tema, `✅ Reembolso sometido a Reservas · No. ${res.numero}`, `${nomCli} · paciente ${r.paciente && r.paciente.nombre}\n${(r.procedimientos || []).length} servicio(s) · ${totTxt}\n\nMensaje para el cliente (WhatsApp):\n${msgCli}`, { tags: ["white_check_mark"] });
           ok++;
         } else {
