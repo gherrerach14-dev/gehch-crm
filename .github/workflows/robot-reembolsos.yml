@@ -1,0 +1,41 @@
+name: Robot reembolsos Reservas
+on:
+  schedule:
+    - cron: "*/15 * * * *"    # cada 15 minutos (solo envía si la variable ROBOT_MODO = real)
+  workflow_dispatch:           # botón "Run workflow": por defecto es una PRUEBA (llena todo y NO envía)
+    inputs:
+      modo:
+        description: "prueba = llena y toma foto sin enviar · real = envía"
+        default: "prueba"
+        required: true
+      reclamo:
+        description: "Opcional: id de un solo reclamo"
+        default: ""
+        required: false
+concurrency:
+  group: robot-reembolsos      # nunca dos robots a la vez (evita duplicados)
+  cancel-in-progress: false
+jobs:
+  robot:
+    # Las corridas automáticas solo arrancan si la variable ROBOT_MODO = real (así no gasta tiempo mientras está en pausa)
+    if: github.event_name == 'workflow_dispatch' || vars.ROBOT_MODO == 'real'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar
+        run: |
+          npm install --no-save --no-package-lock firebase-admin@12.7.0 playwright@1.47.2
+          npx playwright install --with-deps chromium
+        working-directory: aviso
+      - name: Someter reembolsos
+        run: node robot-reembolsos.js
+        working-directory: aviso
+        env:
+          MODO: ${{ github.event_name == 'workflow_dispatch' && inputs.modo || vars.ROBOT_MODO }}
+          SOLO_RECLAMO: ${{ inputs.reclamo }}
+          FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
+          FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
