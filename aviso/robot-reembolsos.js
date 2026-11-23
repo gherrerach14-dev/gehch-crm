@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 6;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 7;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -87,7 +87,8 @@ async function diagnostico(page) {
   const foto = await page.screenshot({ fullPage: true }).catch(() => null);
   const estado = await page.evaluate(() => {
     const q = (s) => document.querySelector(s); const v = (s) => q(s) ? `${q(s).disabled ? "🔒" : "✏️"}${q(s).value ? "=" + String(q(s).value).slice(0, 25) : ""}` : "—";
-    return `Campos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")} · cuenta ${v("#registered-accounts")} · otra ${q("#other-account") ? (q("#other-account").checked ? "☑" : "☐") : "—"}\nBancos: ${q("#bank-list") ? [...q("#bank-list").options].map(o => o.text.trim()).slice(0, 12).join(", ") : "—"}\nCuentas guardadas: ${q("#registered-accounts") ? [...q("#registered-accounts").options].map(o => (o.text.trim() || "(vacía)").replace(/\d(?=\d{4})/g, "•")).join(", ") || "ninguna" : "—"}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}`;
+    const docsTxt = [...document.querySelectorAll(".dz-preview")].map(p => (p.classList.contains("dz-success") ? "✓" : p.classList.contains("dz-error") ? "✗ " + ((p.querySelector(".dz-error-message") || {}).innerText || "") : "…") + " " + ((p.querySelector(".dz-filename") || {}).innerText || "").slice(0, 25)).join(", ");
+    return `Documentos: ${docsTxt || "ninguno"} · botón Enviar ${q("#send-data") ? (q("#send-data").disabled ? "🔒" : "✅ habilitado") : "—"}\nCampos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")} · cuenta ${v("#registered-accounts")} · otra ${q("#other-account") ? (q("#other-account").checked ? "☑" : "☐") : "—"}\nBancos: ${q("#bank-list") ? [...q("#bank-list").options].map(o => o.text.trim()).slice(0, 12).join(", ") : "—"}\nCuentas guardadas: ${q("#registered-accounts") ? [...q("#registered-accounts").options].map(o => (o.text.trim() || "(vacía)").replace(/\d(?=\d{4})/g, "•")).join(", ") || "ninguna" : "—"}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}`;
   }).catch(() => "");
   return { foto, estado };
 }
@@ -219,7 +220,23 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
     const grande = archivos.find(a => a.buffer.length > MAX_ARCHIVO); if (grande) throw new Alto(`un documento pesa más de 5 MB (${(grande.buffer.length / 1048576).toFixed(1)} MB), el límite de Reservas`);
     const total = archivos.reduce((s, a) => s + a.buffer.length, 0); if (total > MAX_TOTAL) throw new Alto(`los documentos suman ${(total / 1048576).toFixed(1)} MB y Reservas acepta hasta 25 MB`);
     await page.setInputFiles("input.dz-hidden-input", archivos.map(a => ({ name: a.name, mimeType: a.mimeType, buffer: a.buffer })));
-    await page.waitForTimeout(3000 + archivos.length * 800);
+    // Cada documento se sube a Reservas al momento: hay que esperar a que quede ✓ (dz-success); si alguno da error, no se envía
+    const docs = await page.waitForFunction(n => {
+      const ps = [...document.querySelectorAll(".dz-preview")];
+      if (ps.length < n) return false;
+      const err = ps.filter(p => p.classList.contains("dz-error"));
+      if (err.length) return { ok: false, msg: err.map(p => (p.querySelector(".dz-error-message") || {}).innerText || "error").join(" · ") };
+      return ps.every(p => p.classList.contains("dz-success") || p.classList.contains("dz-complete")) ? { ok: true } : false;
+    }, archivos.length, { timeout: 90000 }).then(h => h.jsonValue()).catch(() => null);
+    paso(`documentos: ${docs ? (docs.ok ? "subidos" : "error " + docs.msg) : "sin confirmar"}`);
+    if (docs && !docs.ok) throw new Alto(`Reservas rechazó un documento: ${docs.msg}`);
+    if (!docs) {
+      const info = await page.evaluate(() => [...document.querySelectorAll(".dz-preview")].map(p => p.className.replace(/\s+/g, " ")).join(" | ")).catch(() => "");
+      if (real) throw new Alto(`los documentos no terminaron de subir a Reservas en 90 segundos (${info || "sin vista previa"}); no se envió nada`);
+    }
+    await page.waitForTimeout(1500);
+    const enviarListo = await page.$eval("#send-data", b => !b.disabled).catch(() => false);
+    if (real && !enviarListo) throw new Alto("todo quedó lleno, pero Reservas no habilitó el botón «Enviar»; no se envió nada");
     const foto = await page.screenshot({ fullPage: true });
     if (!real) return { prueba: true, foto, estado: (await diagnostico(page)).estado };
     paso("enviar"); // 7. Enviar y leer el número de solicitud
