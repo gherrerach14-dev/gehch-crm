@@ -14,6 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
+const VERSION = 2;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -61,11 +62,17 @@ async function archivosDe(ref) {
   for (const d of s.docs) {
     const a = d.data(); let data = a.data || "";
     for (let i = 1; i < (a.partes || 1); i++) { const p = await d.ref.collection("partes").doc(String(i)).get(); if (!p.exists) throw new Alto(`falta una parte del documento «${a.nombre || d.id}» (el cliente debe volver a subirlo)`); data += p.data().data || ""; }
-    const m = /^data:([^;]+);base64,(.*)$/s.exec(data); if (!m) throw new Alto(`el documento «${a.nombre || d.id}» está dañado`);
-    const buffer = Buffer.from(m[2], "base64");
-    let nombre = String(a.nombre || d.id).replace(/[^\w.\-áéíóúñÁÉÍÓÚÑ ]/g, "_"); const ext = (a.mime || m[1]).includes("pdf") ? ".pdf" : (a.mime || m[1]).includes("png") ? ".png" : ".jpg";
+    // El portal guarda el contenido en base64 puro (sin el prefijo «data:»); se aceptan ambas formas
+    const m = /^data:([^;,]+)[^,]*,(.*)$/s.exec(data);
+    const b64 = (m ? m[2] : data).replace(/\s/g, "");
+    const buffer = Buffer.from(b64, "base64");
+    const firma = buffer.slice(0, 4).toString("binary");
+    const valido = buffer.length > 100 && (firma.startsWith("%PDF") || (buffer[0] === 0xFF && buffer[1] === 0xD8) || firma.startsWith("\x89PNG") || firma.startsWith("GIF8"));
+    if (!valido) throw new Alto(`el documento «${a.nombre || d.id}» no se pudo leer (el cliente debe volver a subirlo)`);
+    const mime = a.mime || (m && m[1]) || (firma.startsWith("%PDF") ? "application/pdf" : "image/jpeg");
+    let nombre = String(a.nombre || d.id).replace(/[^\w.\-áéíóúñÁÉÍÓÚÑ ]/g, "_"); const ext = mime.includes("pdf") ? ".pdf" : mime.includes("png") ? ".png" : ".jpg";
     if (!/\.[a-z0-9]{2,4}$/i.test(nombre)) nombre += ext;
-    out.push({ name: `${d.id}-${nombre}`.slice(0, 90), mimeType: a.mime || m[1], buffer, procIdx: a.procIdx, tipoDoc: a.tipoDoc });
+    out.push({ name: `${d.id}-${nombre}`.slice(0, 90), mimeType: mime, buffer, procIdx: a.procIdx, tipoDoc: a.tipoDoc });
   }
   return out.sort((x, y) => String(x.name).localeCompare(String(y.name)));
 }
@@ -190,7 +197,7 @@ async function main() {
     if (MODO === "real" && /\bprueba\b/i.test(String(r.comentario || ""))) return false;   // reclamos de prueba: nunca se envían (la prueba sí los revisa)
     const R = r.robot || {};
     if (["dudoso", "enviado", "enviando"].includes(R.estado)) return false;                                   // nunca repetir
-    if (R.estado === "error" && !(Number(r.actualizado || 0) > Number(R.fecha || 0)) && !SOLO) return false; // espera a que se corrija
+    if (R.estado === "error" && (R.version || 1) === VERSION && !(Number(r.actualizado || 0) > Number(R.fecha || 0)) && !SOLO) return false; // espera a que se corrija
     if (MODO === "prueba" && R.prueba && !SOLO) return false;                                              // una sola prueba por reclamo
     return true;
   });
@@ -236,7 +243,7 @@ async function main() {
           await ntfy(tema, `⚠️ Reembolso de ${nomCli}: revisar en Reservas`, `El robot pulsó «Enviar» y luego falló (${motivo}).\n\nNO se reintenta para no duplicarlo. Revise en Reservas si entró; si entró, ponga el número en el CRM; si no, sométalo a mano.`, { tags: ["warning"], priority: 4 });
           mal++; continue;
         }
-        if (MODO === "real") await ref.update({ robot: { estado: "error", motivo, fecha: ahora } }).catch(() => {});
+        if (MODO === "real") await ref.update({ robot: { estado: "error", motivo, fecha: ahora, version: VERSION } }).catch(() => {});
         await ntfy(tema, `🤖 No sometí el reembolso de ${nomCli}`, `${MODO === "prueba" ? "(Prueba) " : ""}Motivo: ${motivo}\n\nNo se envió nada a Reservas. El reclamo sigue en «Recibido» en el CRM: corríjalo o sométalo a mano. Si lo corrige en el portal, el robot lo vuelve a intentar solo.`, { tags: ["robot"], priority: 4 });
         mal++; console.log(`Reclamo ${d.id}: no enviado (${e instanceof Alto ? "motivo de negocio" : "error técnico"}).`);
       }
