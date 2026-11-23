@@ -1,11 +1,11 @@
 name: Robot reembolsos Reservas
 on:
   schedule:
-    - cron: "*/15 * * * *"    # cada 15 minutos (solo envía si la variable ROBOT_MODO = real)
+    - cron: "*/15 * * * *"    # respaldo: GitHub lo atrasa; el despertador externo (cron-job.org) lo llama a tiempo con modo=auto
   workflow_dispatch:           # botón "Run workflow": por defecto es una PRUEBA (llena todo y NO envía)
     inputs:
       modo:
-        description: "prueba = llena y toma foto sin enviar · real = envía"
+        description: "prueba = llena y toma foto sin enviar · real = envía · auto = lo que diga ROBOT_MODO (lo usa el despertador)"
         default: "prueba"
         required: true
       reclamo:
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   robot:
     # Las corridas automáticas solo arrancan si la variable ROBOT_MODO = real (así no gasta tiempo mientras está en pausa)
-    if: github.event_name == 'workflow_dispatch' || vars.ROBOT_MODO == 'real'
+    if: (github.event_name == 'workflow_dispatch' && inputs.modo != 'auto') || vars.ROBOT_MODO == 'real'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -35,7 +35,7 @@ jobs:
         run: node robot-reembolsos.js
         working-directory: aviso
         env:
-          MODO: ${{ github.event_name == 'workflow_dispatch' && inputs.modo || vars.ROBOT_MODO }}
+          MODO: ${{ (github.event_name == 'workflow_dispatch' && inputs.modo != 'auto') && inputs.modo || vars.ROBOT_MODO }}
           SOLO_RECLAMO: ${{ inputs.reclamo }}
           FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
           FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
