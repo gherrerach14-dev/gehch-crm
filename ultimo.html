@@ -8,13 +8,14 @@
 <script>
 // Abre siempre la versión más nueva del CRM (CRM-GEHCH_<número>.html) publicada en este repositorio
 (async function(){
-  var respaldo = "CRM-GEHCH_99.html";
+  var respaldo = "CRM-GEHCH_104.html";
   try {
     var r = await fetch("https://api.github.com/repos/gherrerach14-dev/gehch-crm/contents/", {cache:"no-store"});
     if(!r.ok) throw new Error(r.status);
     var lista = await r.json(), mejor = null, num = -1;
     lista.forEach(function(f){ var m = /^CRM-GEHCH_(\d+)\.html$/.exec(f.name); if(m && Number(m[1]) > num){ num = Number(m[1]); mejor = f.name; } });
-    location.replace(mejor || respaldo);
+    // "?v=" obliga al navegador a bajar la versión publicada (no la guardada de antes)
+    location.replace((mejor || respaldo) + "?v=" + Date.now());
   } catch(e){
     document.getElementById("m").innerHTML = 'No se pudo comprobar la última versión. <a href="'+respaldo+'">Abrir el CRM</a>';
     setTimeout(function(){ location.replace(respaldo); }, 2500);
