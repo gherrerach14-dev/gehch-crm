@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 2;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 3;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -77,6 +77,16 @@ async function archivosDe(ref) {
   return out.sort((x, y) => String(x.name).localeCompare(String(y.name)));
 }
 
+// Foto y estado de los campos cuando algo falla (para corregir sin adivinar)
+async function diagnostico(page) {
+  const foto = await page.screenshot({ fullPage: true }).catch(() => null);
+  const estado = await page.evaluate(() => {
+    const q = (s) => document.querySelector(s); const v = (s) => q(s) ? `${q(s).disabled ? "🔒" : "✏️"}${q(s).value ? "=" + String(q(s).value).slice(0, 25) : ""}` : "—";
+    return `Campos: póliza ${v("#policy-affected")} · origen ${v("#original-location-list")} · paciente ${v("#customer-affected") ? "✓" : "—"} · proc ${v("#medical-treatment-list")} · fecha ${v("#date-service")} · monto ${v("#cost")} · pago ${v("#pay-method-list")} · banco ${v("#bank-list")}\nServicios añadidos: ${q("#card-container") ? q("#card-container").children.length + " → " + q("#card-container").innerText.replace(/\s+/g, " ").slice(0, 200) : "—"}`;
+  }).catch(() => "");
+  return { foto, estado };
+}
+
 async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
   const ctx = await browser.newContext({ viewport: { width: 420, height: 900 }, locale: "es-DO", timezoneId: "America/Santo_Domingo" });
   const page = await ctx.newPage(); const alertas = []; page.setDefaultTimeout(15000);
@@ -126,6 +136,10 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
     paso("pago"); // 5. Forma de pago
     const P = rec.pago || {};
     await page.waitForFunction(() => !document.querySelector("#pay-method-list").disabled, null, { timeout: 10000 }).catch(() => {});
+    if (await page.$eval("#pay-method-list", e => e.disabled)) {
+      if (real && !process.env.FORZAR) throw new Alto("después de añadir los servicios, Reservas no habilitó «Forma de pago». No se envió nada; se necesita revisar el formulario (corra el robot en modo prueba con este reclamo para ver la foto)");
+      await page.$eval("#pay-method-list", e => { e.disabled = false; });   // prueba: se desbloquea para ver el resto del formulario
+    }
     if (P.forma === "Cheque") await elegir(page, "#pay-method-list", "Cheque");
     else {
       await elegir(page, "#pay-method-list", "Depósito");
@@ -163,7 +177,7 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
     await page.setInputFiles("input.dz-hidden-input", archivos.map(a => ({ name: a.name, mimeType: a.mimeType, buffer: a.buffer })));
     await page.waitForTimeout(3000 + archivos.length * 800);
     const foto = await page.screenshot({ fullPage: true });
-    if (!real) return { prueba: true, foto };
+    if (!real) return { prueba: true, foto, estado: (await diagnostico(page)).estado };
     paso("enviar"); // 7. Enviar y leer el número de solicitud
     const nAl = alertas.length;
     await antesDeEnviar();   // queda anotado ANTES de pulsar: si algo se corta después, nunca se reintenta (no duplicar)
@@ -177,7 +191,8 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
     const foto2 = await page.screenshot({ fullPage: false });
     if (!numero) return { dudoso: true, foto: foto2, motivo: alertas.slice(nAl).join(" ") || "no apareció la confirmación con el número de solicitud" };
     return { numero, foto: foto2 };
-  } finally { await ctx.close().catch(() => {}); }
+  } catch (e) { const dg = await diagnostico(page); e.foto = dg.foto; e.estado = dg.estado; throw e; }
+  finally { await ctx.close().catch(() => {}); }
 }
 
 async function main() {
@@ -221,7 +236,7 @@ async function main() {
         const res = await someter(browser, r, cedula, archivos, MODO === "real", async () => { pulsado = true; await ref.update({ robot: { estado: "enviando", fecha: Date.now() } }); }).catch(e => { e.pulsado = pulsado; throw e; });
         if (res.prueba) {
           await ref.update({ "robot.prueba": ahora });
-          await ntfy(tema, `🧪 Prueba del robot: reclamo ${d.id}`, `${nomCli} · ${r.paciente && r.paciente.nombre}\n${(r.procedimientos || []).length} servicio(s) · ${totTxt} · ${archivos.length} documento(s)\n\nSe llenó todo en Just – Reembolso SIN enviar. Revise la foto que llega a continuación.`, { tags: ["test_tube"] });
+          await ntfy(tema, `🧪 Prueba del robot: reclamo ${d.id}`, `${nomCli} · ${r.paciente && r.paciente.nombre}\n${(r.procedimientos || []).length} servicio(s) · ${totTxt} · ${archivos.length} documento(s)\n\nSe llenó todo en Just – Reembolso SIN enviar. Revise la foto que llega a continuación.\n\n${res.estado || ""}`, { tags: ["test_tube"] });
           await ntfyFoto(tema, `prueba-${d.id}.png`, res.foto); ok++;
         } else if (res.numero) {
           const nota = `Sometido en Just – Reembolso de Seguros Reservas, solicitud No. ${res.numero} (robot GEHCH).`;
@@ -237,14 +252,15 @@ async function main() {
           await ntfyFoto(tema, `dudoso-${d.id}.png`, res.foto); mal++;
         }
       } catch (e) {
-        const motivo = e instanceof Alto ? e.message : "error técnico del robot: " + String(e.message || e).slice(0, 200);
+        const motivo = e instanceof Alto ? e.message : "error técnico del robot: " + String(e.message || e).split("\n")[0].slice(0, 200);
         if (e.pulsado) {   // ya se había pulsado «Enviar»: no se sabe si entró → dudoso, sin reintento
           await ref.update({ robot: { estado: "dudoso", motivo, fecha: ahora } }).catch(() => {});
           await ntfy(tema, `⚠️ Reembolso de ${nomCli}: revisar en Reservas`, `El robot pulsó «Enviar» y luego falló (${motivo}).\n\nNO se reintenta para no duplicarlo. Revise en Reservas si entró; si entró, ponga el número en el CRM; si no, sométalo a mano.`, { tags: ["warning"], priority: 4 });
           mal++; continue;
         }
         if (MODO === "real") await ref.update({ robot: { estado: "error", motivo, fecha: ahora, version: VERSION } }).catch(() => {});
-        await ntfy(tema, `🤖 No sometí el reembolso de ${nomCli}`, `${MODO === "prueba" ? "(Prueba) " : ""}Motivo: ${motivo}\n\nNo se envió nada a Reservas. El reclamo sigue en «Recibido» en el CRM: corríjalo o sométalo a mano. Si lo corrige en el portal, el robot lo vuelve a intentar solo.`, { tags: ["robot"], priority: 4 });
+        if (e.foto) await ntfyFoto(tema, `error-${d.id}.png`, e.foto);
+        await ntfy(tema, `🤖 No sometí el reembolso de ${nomCli}`, `${MODO === "prueba" ? "(Prueba) " : ""}Motivo: ${motivo}${e.estado ? "\n\n" + e.estado : ""}\n\nNo se envió nada a Reservas. El reclamo sigue en «Recibido» en el CRM: corríjalo o sométalo a mano. Si lo corrige en el portal, el robot lo vuelve a intentar solo.`, { tags: ["robot"], priority: 4 });
         mal++; console.log(`Reclamo ${d.id}: no enviado (${e instanceof Alto ? "motivo de negocio" : "error técnico"}).`);
       }
     }
