@@ -8,7 +8,11 @@ on:
     - cron: "13 11 * * *"   # 7:13 a. m.
     - cron: "43 11 * * *"   # 7:43 a. m.
     - cron: "13 12 * * *"   # 8:13 a. m.
-  workflow_dispatch:         # botón "Run workflow" para probarlo a mano
+  workflow_dispatch:         # botón "Run workflow" para probarlo a mano (envía siempre)
+    inputs:
+      origen:
+        description: "manual = enviar siempre · despertador = solo si el de hoy no ha salido"
+        default: manual
 jobs:
   aviso:
     runs-on: ubuntu-latest
@@ -27,4 +31,4 @@ jobs:
         env:
           FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
           FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
-          EVENTO: ${{ github.event_name }}
+          EVENTO: ${{ inputs.origen == 'despertador' && 'schedule' || github.event_name }}
