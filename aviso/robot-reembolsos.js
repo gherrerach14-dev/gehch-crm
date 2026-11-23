@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 3;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 4;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -114,24 +114,42 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
     if (!procs.length) throw new Alto("el reclamo no tiene servicios");
     for (let i = 0; i < procs.length; i++) {
       const p = procs[i];
-      const tr = await esperarOpciones(page, "#medical-treatment-list");
-      if (!tr.length) throw new Alto("Reservas no cargó la lista de procedimientos");
-      const t = elegirTexto(p.tipo, tr.map(o => o.t)); if (!t) throw new Alto(`el servicio «${p.tipo}» no existe en la lista de Reservas (${tr.map(o => o.t).join(", ")})`);
-      await elegir(page, "#medical-treatment-list", tr.find(o => o.t === t).v);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(String(p.fecha || ""))) throw new Alto(`el servicio ${i + 1} no tiene fecha válida`);
-      await page.fill("#date-service", p.fecha); await page.dispatchEvent("#date-service", "change");
-      const chk = p.moneda === "USD" ? "#usd-currency" : "#dop-currency", otro = p.moneda === "USD" ? "#dop-currency" : "#usd-currency";
-      if (await page.isChecked(otro)) await page.uncheck(otro, { force: true });
-      if (!(await page.isChecked(chk))) await page.check(chk, { force: true });
-      await page.waitForFunction(() => !document.querySelector("#cost").disabled, null, { timeout: 10000 }).catch(() => {});
       const monto = Number(p.monto); if (!(monto > 0)) throw new Alto(`el servicio ${i + 1} no tiene monto`);
-      await page.fill("#cost", monto.toFixed(2));
+      const chk = p.moneda === "USD" ? "#usd-currency" : "#dop-currency", otro = p.moneda === "USD" ? "#dop-currency" : "#usd-currency";
+      // Llena el servicio como lo haría una persona (teclado y clics reales); si Reservas borra algo al cambiar otro campo, se vuelve a poner
+      const llenar = async () => {
+        const tr = await esperarOpciones(page, "#medical-treatment-list");
+        if (!tr.length) throw new Alto("Reservas no cargó la lista de procedimientos");
+        const t = elegirTexto(p.tipo, tr.map(o => o.t)); if (!t) throw new Alto(`el servicio «${p.tipo}» no existe en la lista de Reservas (${tr.map(o => o.t).join(", ")})`);
+        const val = tr.find(o => o.t === t).v;
+        if ((await page.$eval("#medical-treatment-list", e => e.value)) !== val) await elegir(page, "#medical-treatment-list", val);
+        if ((await page.$eval("#date-service", e => e.value)) !== p.fecha) { await page.fill("#date-service", p.fecha); await page.dispatchEvent("#date-service", "change"); await page.waitForTimeout(500); }
+        if (await page.isChecked(otro)) { await page.click(otro, { force: true }); await page.waitForTimeout(300); }
+        if (!(await page.isChecked(chk))) { await page.click(chk, { force: true }); await page.waitForTimeout(500); }
+        await page.waitForFunction(() => !document.querySelector("#cost").disabled, null, { timeout: 10000 }).catch(() => {});
+        if (Number(String(await page.$eval("#cost", e => e.value)).replace(/[^\d.]/g, "")) !== Number(monto.toFixed(2))) {
+          await page.click("#cost", { clickCount: 3 }).catch(() => {}); await page.fill("#cost", "");
+          await page.type("#cost", monto.toFixed(2), { delay: 40 }); await page.press("#cost", "Tab");
+        }
+        return val;
+      };
+      const avisosPantalla = () => page.evaluate(() => [...document.querySelectorAll(".swal2-html-container,.swal2-title,.toast,.alert,[role=alert],.error,.text-danger,.invalid-feedback")].map(e => e.innerText.trim()).filter(Boolean).join(" · ").slice(0, 200)).catch(() => "");
       const antes = await page.$$eval("#card-container > *", e => e.length);
-      const nAl = alertas.length;
-      await page.$eval(".btn-add", b => b.click());
-      await page.waitForFunction(n => document.querySelectorAll("#card-container > *").length > n, antes, { timeout: 10000 }).catch(() => {});
-      const despues = await page.$$eval("#card-container > *", e => e.length);
-      if (despues <= antes) throw new Alto(`Reservas no aceptó el servicio ${i + 1} (${p.tipo}, ${fF(p.fecha)}, ${mon(monto, p.moneda)})${alertas.length > nAl ? ": " + alertas.slice(nAl).join(" ") : ""}`);
+      const nAl = alertas.length; let agregado = false;
+      for (let intento = 1; intento <= 3 && !agregado; intento++) {
+        const val = await llenar();
+        await page.waitForTimeout(400);
+        // antes de pulsar, todo debe seguir puesto
+        const ok = await page.evaluate(([v, f]) => document.querySelector("#medical-treatment-list").value === v && document.querySelector("#date-service").value === f && !!document.querySelector("#cost").value, [val, p.fecha]);
+        if (!ok) continue;
+        if (intento === 1) await page.$eval(".btn-add", b => b.click());
+        else { await page.locator(".btn-add").scrollIntoViewIfNeeded().catch(() => {}); await page.click(".btn-add", { force: true }); }
+        await page.waitForFunction(n => document.querySelectorAll("#card-container > *").length > n, antes, { timeout: 8000 }).catch(() => {});
+        agregado = (await page.$$eval("#card-container > *", e => e.length)) > antes;
+        paso(`servicio ${i + 1}, intento ${intento}: ${agregado ? "añadido" : "no"}`);
+      }
+      if (!agregado) { const av = await avisosPantalla(); throw new Alto(`Reservas no aceptó el servicio ${i + 1} (${p.tipo}, ${fF(p.fecha)}, ${mon(monto, p.moneda)})${alertas.length > nAl ? ": " + alertas.slice(nAl).join(" ") : ""}${av ? " · mensaje en pantalla: " + av : ""}`); }
     }
     paso("pago"); // 5. Forma de pago
     const P = rec.pago || {};
