@@ -1,4 +1,4 @@
-// ── Agenda diaria GEHCH + motor de Cobros (copia exacta del CRM v104; misma lógica en el CRM y en el aviso de las 8:00) ──
+// ── Agenda diaria GEHCH + motor de Cobros y reporte diario (copia exacta del CRM v106; misma lógica en el CRM y en el aviso de las 8:00) ──
 // ── Cobros de hoy: qué toca hacer con cada cliente (misma lógica en el CRM y en el aviso de las 8:00) ──
 // Los clientes pagan directo a la aseguradora; GEHCH da seguimiento. Gracia por aseguradora (config.cobros.gracia, 30 días por defecto).
 const COB_ETAPAS = {
@@ -158,6 +158,48 @@ function gehchCobrosInforme(D, hoyISO){
     `Morosidad por aseguradora:`,
     ...k.porAseg.filter(a=>a.vencRD>0).slice(0,8).map(a=>`• ${a.aseg}: ${a.morosidad}% vencido${a.atrasoProm===null?"":" · atraso prom. "+a.atrasoProm+" días"}`)
   ].join("\n");
+}
+
+// ── 🤖 Reporte diario del área de Cobros (el CRM rinde cuentas): qué se hizo el día, resultados y qué toca ──
+function gehchCobrosReporteDia(D, hoyISO, fechaISO){
+  const F = fechaISO || hoyISO; const fF = (s)=>String(s||"").slice(0,10).split("-").reverse().join("/");
+  const mon = (n,m) => (m==="USD"?"US$ ":"RD$ ") + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const t = (o) => Object.entries(o).filter(([,v])=>Math.abs(v)>0.009).map(([m,v])=>mon(v,m)).join(" + ") || "—";
+  const pol = {}; (D.polizas||[]).forEach(p=>{ pol[String(p.id)]=p; });
+  const cli = {}; (D.clientes||[]).forEach(c=>{ cli[String(c.id)]=c; });
+  const nom = (cid)=>{ const c=cli[String(cid)]; return c?`${c.nombre||""} ${c.apellido||""}`.replace(/\s+/g," ").trim():"—"; };
+  const logs = (D.gestionesCxC||[]).filter(g=>g&&g.log&&String(g.fecha||"").slice(0,10)===F);
+  const cnt = (tp)=>logs.filter(g=>g.tipo===tp).length;
+  // Cobrado ese día: cuotas pagadas y abonos con esa fecha
+  const cob = {}; const sumar=(m,v)=>{ const k=m==="USD"?"USD":"RD$"; cob[k]=Math.round(((cob[k]||0)+Number(v||0))*100)/100; };
+  const pagosDia = [];
+  (D.planes||[]).forEach(c=>{ const p=pol[String(c.polizaId)]; if(!p) return;
+    const ab=(c.abonos||[]).filter(a=>String(a.fecha).slice(0,10)===F);
+    let v=0; if(ab.length) ab.forEach(a=>{ v+=Number(a.monto||0); });
+    else if(c.estado==="Pagado" && String(c.fechaPago||"").slice(0,10)===F) v=Number(c.montoPagado??c.monto);
+    if(v>0.009){ sumar(p.moneda, v); pagosDia.push({cid:p.clienteId, txt:`${p.aseguradora} · ${String(p.numero).trim()} · cuota ${c.numero}/${c.total} · ${mon(v,p.moneda)}${c.estado!=="Pagado"?" (abono parcial)":""}${c.referenciaPago?" · ref. "+c.referenciaPago:""}`}); } });
+  const k = gehchCobrosKPI(D, hoyISO); const h = gehchCobrosHoy(D, hoyISO);
+  const n = (e)=>h.acciones.filter(a=>a.e===e).length;
+  const hoyD = new Date(hoyISO+"T00:00:00Z"); const en = (s)=>Math.round((new Date(String(s).slice(0,10)+"T00:00:00Z")-hoyD)/864e5);
+  const riesgo = h.acciones.filter(a=>a.limite && en(a.limite)<=5).sort((a,b)=>String(a.limite).localeCompare(String(b.limite)));
+  const promHoy = (D.gestionesCxC||[]).filter(g=>g&&!g.log&&String(g.promesaPago||"")===hoyISO&&g.estado!=="Pagado");
+  const promCli = [...new Set(promHoy.map(g=>{ const cu=(D.planes||[]).find(x=>String(x.id)===String(g.cuotaId)); const p=cu&&pol[String(cu.polizaId)]; return p?String(p.clienteId):null; }).filter(Boolean))];
+  const L = [];
+  L.push(`🤖 REPORTE DE COBROS · ${fF(F)}${F===hoyISO?" (hoy, hasta ahora)":""}`);
+  L.push(``);
+  L.push(`Gestiones: 💬 ${cnt("contacto")} mensajes · 📞 ${cnt("llamada")} llamadas · 📅 ${cnt("promesa")} promesas · 💵 ${pagosDia.length} cuota(s) pagada(s)`);
+  L.push(`Cobrado ese día: ${t(cob)} · en el mes: ${t(k.cobradoMes)}`);
+  if(pagosDia.length){ L.push(``, `💵 Pagos:`); pagosDia.slice(0,12).forEach(x=>L.push(`• ${nom(x.cid)} · ${x.txt}`)); if(pagosDia.length>12) L.push(`• … y ${pagosDia.length-12} más`); }
+  const prom = logs.filter(g=>g.tipo==="promesa"); if(prom.length){ L.push(``, `📅 Promesas de pago:`); prom.slice(0,10).forEach(g=>L.push(`• ${nom(g.clienteId)} · para el ${fF(g.promesa)}`)); }
+  const llam = logs.filter(g=>g.tipo==="llamada"); if(llam.length){ L.push(``, `📞 Llamadas:`); llam.slice(0,10).forEach(g=>L.push(`• ${nom(g.clienteId)} · ${String(g.texto||"").replace(/^Llamada:?\s*/,"")||"sin nota"}`)); }
+  L.push(``, `HOY TOCA: 🚨 ${n("llamar")} llamadas urgentes · ⚠️ ${n("promesaRota")} promesas incumplidas · ⏳ ${n("inicial")} iniciales · 💬 ${h.acciones.length-n("llamar")-n("promesaRota")-n("inicial")} mensajes`);
+  if(promCli.length) L.push(`📅 Promesas que vencen hoy: ${promCli.map(nom).join(", ")}`);
+  if(riesgo.length){ L.push(``, `🔴 Pueden ser cancelados (ya pasó el plazo de gracia o vence en 5 días o menos):`); riesgo.slice(0,8).forEach(a=>L.push(`• ${nom(a.cid)} · ${Object.entries(a.tot).map(([m,v])=>mon(v,m)).join(" + ")} · ${en(a.limite)<0?"desde el "+fF(a.limite):"el "+fF(a.limite)}`)); if(riesgo.length>8) L.push(`• … y ${riesgo.length-8} más`); }
+  L.push(``, `Vencido total: ${t(k.vencido)} · morosidad ${k.morosidad}%`);
+  if(h.conciliar.length) L.push(`⚖️ Pedir antigüedad de saldos a: ${h.conciliar.map(c=>c.aseg).join(", ")}`);
+  if(!logs.length && !pagosDia.length && F!==hoyISO) L.push(``, `⚠️ Ese día no se registró ninguna gestión de cobro en el CRM.`);
+  let txt = L.join("\n"); if(txt.length>3900) txt = txt.slice(0,3880)+"\n… (ver CRM)";
+  return txt;
 }
 
 // ── Agenda diaria GEHCH: lo que hay que atender hoy (misma lógica en el CRM y en el aviso de las 8:00) ──
@@ -377,6 +419,14 @@ async function main(){
     message: ag.texto, tags:["calendar"], click: "https://gherrerach14-dev.github.io/gehch-crm/ultimo.html" }) });
   if(!r.ok){ if(!manual) await marca.set({ fecha:"", estado:"falló", hora:new Date().toISOString() }); throw new Error("ntfy respondió "+r.status); }
   await marca.set({ fecha:hoy, estado:"enviado", hora:new Date().toISOString(), manual });
+  // 🤖 Reporte de Cobros del día anterior (aviso aparte; si falla, no afecta la agenda)
+  let reporteOk = false;
+  try{
+    const ayer = new Date(Date.parse(hoy+"T12:00:00Z")-86400000).toISOString().slice(0,10);
+    const rr0 = await fetch("https://ntfy.sh/", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({
+      topic: tema, title: `GEHCH · Reporte de Cobros del ${ayer.split("-").reverse().join("/")}`, message: gehchCobrosReporteDia(D, hoy, ayer), tags:["robot"], click: "https://gherrerach14-dev.github.io/gehch-crm/ultimo.html" }) });
+    reporteOk = rr0.ok;
+  }catch(e){ console.log("No se pudo enviar el reporte de cobros:", e.message); }
   // Recordatorios de hoy con hora: aviso a esa hora exacta (los creados en el celular ya lo traen programado)
   let programados = 0;
   for(const x of (D.recordatorios||[])){
@@ -389,6 +439,6 @@ async function main(){
       tags:["alarm_clock"], delay: String(ts), click: "https://gherrerach14-dev.github.io/gehch-crm/ultimo.html" }) });
     if(rr.ok) programados++;
   }
-  console.log(`Aviso enviado: ${ag.total} punto(s) en ${ag.secciones.length} sección(es). Reembolsos leídos: ${D.rc.length}. Avisos con hora programados: ${programados}.`);
+  console.log(`Aviso enviado: ${ag.total} punto(s)${reporteOk?" + reporte de cobros":""} en ${ag.secciones.length} sección(es). Reembolsos leídos: ${D.rc.length}. Avisos con hora programados: ${programados}.`);
 }
 main().catch(e=>{ console.error("Error:", e.message); process.exit(1); });
