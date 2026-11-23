@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 5;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 6;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -168,41 +168,50 @@ async function someter(browser, rec, cedula, archivos, real, antesDeEnviar) {
       await elegir(page, "#pay-method-list", "Depósito");
       const bancos = await esperarOpciones(page, "#bank-list");
       if (!bancos.length) throw new Alto("Reservas no cargó la lista de bancos");
-      if (P.cuentaRegistrada) {
-        // Cuenta ya registrada en Reservas: se busca banco por banco; si hay más de una cuenta, no se adivina
-        // Al elegir el banco, Reservas trae sola la cuenta guardada de ese banco. Se prueba banco por banco
-        // (primero Banco de Reservas, el más común) hasta encontrar la cuenta; con más de una cuenta no se adivina.
-        const orden = [...bancos].sort((a, b) => (/reservas/i.test(b.t) ? 1 : 0) - (/reservas/i.test(a.t) ? 1 : 0));
-        let hallada = null;
-        for (const b of orden) {
-          await elegir(page, "#bank-list", b.v);
-          const cs = await esperarOpciones(page, "#registered-accounts", 4000);
-          if (!cs.length) continue;
-          if (cs.length > 1) throw new Alto(`el titular tiene ${cs.length} cuentas registradas en ${b.t}; elija una a mano`);
-          hallada = { b, c: cs[0] }; break;
-        }
-        if (!hallada) throw new Alto("el cliente marcó «cuenta registrada», pero Reservas no muestra ninguna cuenta guardada para el titular en ningún banco");
-        // La cuenta puede quedar elegida sola (campo bloqueado) o hay que elegirla
+      // 1) ¿Reservas ya tiene guardada la cuenta del titular? (pasa siempre después del primer reembolso pagado)
+      //    Si el cliente dio banco y número, se busca esa cuenta en ese banco; si marcó «cuenta registrada», se busca banco por banco
+      //    (primero Banco de Reservas). Con más de una cuenta guardada y sin número para distinguir, no se adivina.
+      const numP = dig(P.numero); const ult4 = numP.slice(-4);
+      const bancoP = P.banco ? (elegirTexto(P.banco, bancos.map(o => o.t)) || bancos.find(o => tokens(P.banco).length && tokens(P.banco).filter(t => !["BANCO"].includes(t)).every(t => norm(o.t).includes(t)))?.t
+        || bancos.find(o => { const x = norm(o.t).replace(/BANCO| /g, ""), y = norm(P.banco).replace(/BANCO| /g, ""); return y.length > 2 && (x.startsWith(y) || y.startsWith(x.split(",")[0])); })?.t) : null;
+      const orden = bancoP ? [bancos.find(o => o.t === bancoP)] : [...bancos].sort((a, b) => (/reservas/i.test(b.t) ? 1 : 0) - (/reservas/i.test(a.t) ? 1 : 0));
+      let hallada = null;
+      if (await page.isChecked("#other-account")) await page.click("#other-account", { force: true });
+      for (const b of orden) {
+        await elegir(page, "#bank-list", b.v);
+        const cs = await esperarOpciones(page, "#registered-accounts", 4000);
+        if (!cs.length) continue;
+        if (numP) { const c = cs.find(c => dig(c.t).endsWith(ult4) || dig(c.v).endsWith(ult4)); if (c) { hallada = { b, c }; break; } continue; }
+        if (cs.length > 1) throw new Alto(`el titular tiene ${cs.length} cuentas guardadas en ${b.t}; elija una a mano`);
+        hallada = { b, c: cs[0] }; break;
+      }
+      if (hallada) {
         await page.waitForFunction(() => { const e = document.querySelector("#registered-accounts"); return e && (!e.disabled || e.value); }, null, { timeout: 6000 }).catch(() => {});
         const est = await page.$eval("#registered-accounts", e => ({ dis: e.disabled, val: e.value }));
         if (!est.dis) { if (est.val !== hallada.c.v) await elegir(page, "#registered-accounts", hallada.c.v); }
         else if (est.val !== hallada.c.v) throw new Alto(`Reservas mostró la cuenta guardada en ${hallada.b.t}, pero no la dejó elegir (campo bloqueado)`);
+        paso(`cuenta guardada en ${hallada.b.t}`);
       } else {
-        const b = elegirTexto(P.banco, bancos.map(o => o.t)) || bancos.find(o => tokens(P.banco).every(t => norm(o.t).includes(t)))?.t;
-        if (!b) throw new Alto(`el banco «${P.banco}» no está en la lista de Reservas`);
-        await elegir(page, "#bank-list", bancos.find(o => o.t === b).v);
-        if (!(await page.isChecked("#other-account"))) await page.check("#other-account", { force: true });
-        await page.waitForTimeout(500);
-        if (dig(P.numero).length < 6) throw new Alto("falta el número de cuenta del cliente");
-        await page.fill("#account-number", dig(P.numero));
+        // 2) Cuenta nueva: «Ingresar otra cuenta» primero (Reservas limpia el banco al marcarla), luego banco, número, tipo y moneda
+        if (P.cuentaRegistrada && !numP) throw new Alto("el cliente marcó «cuenta registrada», pero Reservas no muestra ninguna cuenta guardada para el titular");
+        if (numP.length < 6) throw new Alto("falta el número de cuenta del cliente");
+        if (!bancoP) throw new Alto(`el banco «${P.banco || "(vacío)"}» no está en la lista de Reservas`);
+        if (!(await page.isChecked("#other-account"))) { await page.click("#other-account", { force: true }); await page.waitForTimeout(700); }
+        await elegir(page, "#bank-list", bancos.find(o => o.t === bancoP).v);
+        await page.fill("#account-number", numP);
         const tipos = await esperarOpciones(page, "#account-type-list", 8000);
         const tp = tipos.find(o => norm(o.t).includes(norm(P.tipoCuenta || "Ahorro").slice(0, 5))); if (!tp) throw new Alto(`el tipo de cuenta «${P.tipoCuenta}» no está en la lista de Reservas`);
         await elegir(page, "#account-type-list", tp.v);
-        const mons = await esperarOpciones(page, "#currency-type-list", 8000);
         const quiere = /d[oó]lar/i.test(P.monedaCuenta || "") ? "DOL" : "PES";
-        const mc = mons.find(o => norm(o.t).startsWith(quiere)) || mons.find(o => norm(o.t).includes(quiere === "DOL" ? "US" : "DOP"));
-        if (mons.length && !mc) throw new Alto(`la moneda de cuenta «${P.monedaCuenta}» no está en la lista de Reservas`);
-        if (mc) await elegir(page, "#currency-type-list", mc.v);
+        const mon0 = await page.$eval("#currency-type-list", e => ({ dis: e.disabled, t: (e.selectedOptions[0] || {}).text || "" }));
+        if (!norm(mon0.t).startsWith(quiere)) {
+          if (mon0.dis) throw new Alto(`la cuenta es en ${quiere === "DOL" ? "dólares" : "pesos"}, pero Reservas tiene la moneda fija en «${mon0.t}»`);
+          const mons = await esperarOpciones(page, "#currency-type-list", 8000);
+          const mc = mons.find(o => norm(o.t).startsWith(quiere)) || mons.find(o => norm(o.t).includes(quiere === "DOL" ? "US" : "DOP"));
+          if (!mc) throw new Alto(`la moneda de cuenta «${P.monedaCuenta}» no está en la lista de Reservas`);
+          await elegir(page, "#currency-type-list", mc.v);
+        }
+        paso("cuenta nueva");
       }
     }
     paso("documentos"); // 6. Documentos
