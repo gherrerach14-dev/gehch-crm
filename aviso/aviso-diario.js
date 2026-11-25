@@ -427,6 +427,28 @@ async function main(){
       topic: tema, title: `GEHCH · Reporte de Cobros del ${ayer.split("-").reverse().join("/")}`, message: gehchCobrosReporteDia(D, hoy, ayer), tags:["robot"], click: "https://gherrerach14-dev.github.io/gehch-crm/ultimo.html" }) });
     reporteOk = rr0.ok;
   }catch(e){ console.log("No se pudo enviar el reporte de cobros:", e.message); }
+  // 📧 Correos sin responder (los deja listos el asistente de correo; si falla, no afecta la agenda)
+  let correoOk = false;
+  try{
+    const ce = await db.collection("gehch").doc("correoEstado").get();
+    const R = ce.exists ? (ce.data().resumen||null) : null;
+    if(R && Date.now()-R.fecha < 36*3600e3){
+      const P = R.pendientes||[];
+      const g = { cliente:"👤 CLIENTES", aseguradora:"🏢 ASEGURADORAS", otro:"✉️ OTROS" };
+      const L = [];
+      Object.keys(g).forEach(c=>{ const xs=P.filter(p=>p.cat===c); if(!xs.length) return; L.push(`${g[c]} (${xs.length})`);
+        xs.slice(0,8).forEach(p=>L.push(`• ${p.urgente?"⚠️ ":""}${p.cat==="aseguradora"&&p.aseg?p.aseg+" · ":""}${p.nombre} — ${p.asunto} · ${p.dias} día${p.dias===1?"":"s"}`));
+        if(xs.length>8) L.push(`• … y ${xs.length-8} más`); L.push(""); });
+      const lunes = new Date(Date.parse(hoy+"T12:00:00Z")).getUTCDay()===1;
+      const S = R.semana||{};
+      if(lunes && S.recibidos) L.push(`📊 Últimos 7 días: ${S.recibidos} correo(s) de personas · respondidos ${S.respondidos} (${Math.round(100*S.respondidos/S.recibidos)}%) · sin responder ${P.length}.`);
+      if(P.length || lunes){
+        const rc = await fetch("https://ntfy.sh/", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({
+          topic: tema, title: P.length?`GEHCH · Correos sin responder (${P.length})`:"GEHCH · Correo al día", message: (L.join("\n").trim()||"✅ No tiene correos de personas sin responder.").slice(0,3900), tags:["envelope"] }) });
+        correoOk = rc.ok;
+      }
+    }
+  }catch(e){ console.log("No se pudo enviar el resumen de correos:", e.message); }
   // Recordatorios de hoy con hora: aviso a esa hora exacta (los creados en el celular ya lo traen programado)
   let programados = 0;
   for(const x of (D.recordatorios||[])){
@@ -439,6 +461,6 @@ async function main(){
       tags:["alarm_clock"], delay: String(ts), click: "https://gherrerach14-dev.github.io/gehch-crm/ultimo.html" }) });
     if(rr.ok) programados++;
   }
-  console.log(`Aviso enviado: ${ag.total} punto(s)${reporteOk?" + reporte de cobros":""} en ${ag.secciones.length} sección(es). Reembolsos leídos: ${D.rc.length}. Avisos con hora programados: ${programados}.`);
+  console.log(`Aviso enviado: ${ag.total} punto(s)${reporteOk?" + reporte de cobros":""}${correoOk?" + correos":""} en ${ag.secciones.length} sección(es). Reembolsos leídos: ${D.rc.length}. Avisos con hora programados: ${programados}.`);
 }
 main().catch(e=>{ console.error("Error:", e.message); process.exit(1); });
