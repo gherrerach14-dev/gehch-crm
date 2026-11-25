@@ -7,7 +7,7 @@
 //      (y aviso inmediato si el correo es urgente).
 // Nunca borra, mueve, marca ni responde correos (abre el buzón en modo lectura).
 // El repositorio es público: el registro de GitHub solo muestra cantidades, nunca remitentes ni asuntos.
-const VERSION = 1;
+const VERSION = 2;
 const HORAS_SIN_RESPUESTA = 24;
 const DIAS_REVISION = 21;
 
@@ -138,10 +138,21 @@ async function main() {
   let buzon;
   try { await client.connect(); buzon = await leerBuzon(client, norm(usuario)); }
   catch (e) {
+    // Motivo en palabras simples (sin datos de la cuenta: el registro de GitHub es público)
+    const txt = String(e.responseText || e.message || ""), code = String(e.code || (e.cause && e.cause.code) || "");
+    let motivo;
+    if (e.authenticationFailed || /authenticat|login|credential|password|LOGIN/i.test(txt)) motivo = "el servidor rechazó el usuario o la contraseña. Revise que CORREO_USUARIO sea el correo completo y que CORREO_CLAVE sea la misma contraseña del webmail";
+    else if (/ENOTFOUND|EAI_AGAIN/.test(code + txt)) motivo = `no existe el servidor «${servidor}». Hay que poner el nombre correcto en la variable CORREO_SERVIDOR`;
+    else if (/CERT|certificate|altnames|self.signed|SSL|TLS/i.test(code + txt)) {
+      let cn = ""; try { const tls = require("tls"); cn = await new Promise((ok) => { const s = tls.connect({ host: servidor, port: 993, rejectUnauthorized: false, servername: servidor }, () => { const c = s.getPeerCertificate() || {}; ok((c.subject && c.subject.CN) || ""); s.end(); }); s.on("error", () => ok("")); setTimeout(() => ok(""), 8000); }); } catch (x) { }
+      motivo = `el certificado de seguridad del servidor no es para «${servidor}»${cn ? `; el servidor se llama «${cn}»: hay que ponerlo en la variable CORREO_SERVIDOR` : ""}`;
+    }
+    else if (/ETIMEDOUT|ECONNREFUSED|ECONNRESET|EHOSTUNREACH|timeout/i.test(code + txt)) motivo = `el servidor «${servidor}» no acepta la conexión desde GitHub por el puerto 993 (puede estar bloqueado por el hosting)`;
+    else motivo = `error del servidor (${(code || txt).slice(0, 80)})`;
     const est = await crm.collection("gehch").doc("correoEstado").get(); const ya = est.exists ? est.data() : {};
-    if (!ya.errorAvisado) await ntfy(tema, "📧 No pude leer el correo de GEHCH", `El asistente de correo no pudo entrar al buzón (${(e.authenticationFailed || /auth|login|credential|password/i.test(String(e.responseText || e.message))) ? "usuario o contraseña incorrectos: si cambió la contraseña del correo, actualícela en GitHub" : "el servidor no respondió"}). Lo vuelve a intentar solo.`, { tags: ["warning"] });
-    await crm.collection("gehch").doc("correoEstado").set({ errorAvisado: true, error: String(e.responseText || e.message).slice(0, 200) }, { merge: true });
-    console.log("Asistente de correo: no pudo entrar al buzón; ya se avisó por ntfy. Lo intenta de nuevo en la próxima corrida.");
+    if (ya.errorMotivo !== motivo) await ntfy(tema, "📧 No pude leer el correo de GEHCH", `El asistente de correo no pudo entrar al buzón: ${motivo}.\n\nLo vuelve a intentar solo cada 15 minutos; no le aviso de nuevo hasta que cambie el motivo.`, { tags: ["warning"] });
+    await crm.collection("gehch").doc("correoEstado").set({ errorAvisado: true, errorMotivo: motivo, error: txt.slice(0, 200) }, { merge: true });
+    console.log("Asistente de correo: no pudo entrar al buzón. Motivo: " + motivo.replace(servidor, "[servidor]") + ". Se intenta de nuevo en la próxima corrida.");
     return;   // sin marcar la corrida como fallida: así GitHub no manda un correo de error cada 15 minutos
   } finally { try { await client.logout(); } catch (e) { } }
 
@@ -192,7 +203,7 @@ async function main() {
   }
   // Limpia avisos de más de 60 días y guarda el resumen para el aviso de las 8:00
   Object.keys(avisados).forEach((k) => { if (Date.now() - avisados[k] > 60 * 86400e3) delete avisados[k]; });
-  await est.set({ version: VERSION, fecha: Date.now(), avisados, errorAvisado: false, error: null, hayEnviados: buzon.hayEnviados,
+  await est.set({ version: VERSION, fecha: Date.now(), avisados, errorAvisado: false, errorMotivo: null, error: null, hayEnviados: buzon.hayEnviados,
     resumen: { fecha: Date.now(), semana, pendientes: pend.slice(0, 40).map(({ id, texto, ...p }) => p) } });
   console.log(`Correo revisado: ${buzon.entrada.length} recibidos, ${buzon.salida.length} enviados (${DIAS_REVISION} días). Sin responder: ${pend.length}. Avisos: ${nJust} de Just, ${nDocs} de documentos, ${nUrg} urgentes.`);
 }
