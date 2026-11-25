@@ -39,3 +39,25 @@ jobs:
           SOLO_RECLAMO: ${{ inputs.reclamo }}
           FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
           FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
+  correo:
+    # Asistente de correo GEHCH: lee el buzón (solo lectura) con cada despertador del robot.
+    # Si no existen los secretos CORREO_USUARIO y CORREO_CLAVE, no hace nada.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar
+        run: npm install --no-save --no-package-lock firebase-admin@12.7.0 imapflow@1.0.191 mailparser@3.7.2
+        working-directory: aviso
+      - name: Revisar correo
+        run: node correo.js
+        working-directory: aviso
+        env:
+          CORREO_USUARIO: ${{ secrets.CORREO_USUARIO }}
+          CORREO_CLAVE: ${{ secrets.CORREO_CLAVE }}
+          CORREO_SERVIDOR: ${{ vars.CORREO_SERVIDOR }}
+          FIREBASE_CRM: ${{ secrets.FIREBASE_CRM }}
+          FIREBASE_RECLAMOS: ${{ secrets.FIREBASE_RECLAMOS }}
