@@ -14,7 +14,7 @@
 const admin = require("firebase-admin");
 const { chromium } = require("playwright");
 
-const VERSION = 9;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
+const VERSION = 10;   // si el robot se corrige, los reclamos que fallaron con una versión anterior se reintentan solos
 const MODO = String(process.env.MODO || "").trim().toLowerCase();
 const URL_JUST = process.env.JUST_URL || "https://app.segurosreservas.com/RefundJust/home/index?idnumber=";
 const MAX_ARCHIVO = 5 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024;
@@ -321,7 +321,7 @@ async function main() {
           await ntfy(tema, `🧪 Prueba del robot: reclamo ${d.id}`, `${nomCli} · ${r.paciente && r.paciente.nombre}\n${(r.procedimientos || []).length} servicio(s) · ${totTxt} · ${archivos.length} documento(s)\n\nSe llenó todo en Just – Reembolso SIN enviar. Revise la foto que llega a continuación.\n\n${res.estado || ""}`, { tags: ["test_tube"] });
           await ntfyFoto(tema, `prueba-${d.id}.png`, res.foto); ok++;
         } else if (res.numero) {
-          const nota = `Sometido en Just – Reembolso de Seguros Reservas, solicitud No. ${res.numero} (robot GEHCH).`;
+          const nota = `Número de solicitud en Seguros Reservas: ${res.numero}.`;   // el cliente lo ve en el portal y en el mensaje de aviso: sin términos internos
           await ref.update({ estado: "Enviado a aseguradora", liquidacion: { numeroAseg: res.numero }, notaAdmin: nota, actualizado: ahora,
             historial: admin.firestore.FieldValue.arrayUnion({ estado: "Enviado a aseguradora", nota, fecha: ahora }), robot: { estado: "enviado", numero: res.numero, fecha: ahora } });
           const nombrePila = String(nomCli).split(" ")[0];
